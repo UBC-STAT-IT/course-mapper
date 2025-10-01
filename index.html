@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/underscore@1.12.0/underscore-min.js"></script>
+  <link rel="stylesheet" type="text/css" href="main.css">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;700&display=swap" rel="stylesheet">
+  <title>UBC Mathematics Undergraduate Program</title>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XKD62LW606"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-XKD62LW606');
+  </script>
+</head>
+
+<body>
+  
+  <div id="dashboard">
+
+    <header id="header">
+      <h2>UBC Mathematics</h2>
+    </header>
+      
+    <div id="program-track-nav">
+    </div>
+
+    <div id="course-info">
+        <script id="course-info-template" type="text/template">
+          <h3>MATH <%= number %> <%= title %></h3>
+          <p><%= description %></p>
+          <% if (prereqs.length > 0) { %>
+          <h4>Prerequisites</h4>
+          <ul><% _.each(prereqs, function(prereq) { %>
+            <li><%= prereq.description %></li>
+            <% }); %>
+          </ul>
+          <% }; %>
+          <% if (coreqs.length > 0) { %>
+          <h4>Corequisites</h4>
+          <ul><% _.each(coreqs, function(coreq) { %>
+            <li><%= coreq.description %></li>
+            <% }); %>
+          </ul>
+          <% }; %>
+          <% if (notes.length > 0) { %>
+          <h4>Notes</h4>
+          <p><%= notes %></p>
+          <% }; %>
+        </script>
+    </div>
+
+    <div id="course-map"><svg></svg></div>
+
+    <div id="program-info">
+      <div id="program-info1">
+        <script id="program-info1-template" type="text/template">
+          <h3><%= name %></h3>
+          <p><%= description1 %></p>
+          <% if (typeof(courses) !== "undefined") { %>
+            <p>Courses: <%= courses %></p>
+          <% }; %>
+        </script>
+      </div>
+      
+      <div id="program-info2">
+        <script id="program-info2-template" type="text/template">
+          <% if (typeof(quote) !== "undefined") { %>
+            <img src="img/<%= image %>" class="reflection">
+            <p style="text-align: center;"><em>"<%= quote %>"</em></p>
+          <% } else { %>
+            <img src="img/ubc.png" class="reflection">
+          <% }; %>
+        </script>
+      </div>
+
+      <div id="show-more">Show more +</div>
+    </div>
+    
+    <div id="program-info-more">
+      <div id="program-info1-more">
+        <script id="program-info1-more-template" type="text/template">
+          <h3><%= name %></h3>
+          <p><%= description1 %></p>
+          <% if (typeof(courses) !== "undefined") { %>
+            <p>Courses: <%= courses %></p>
+            <p>Suggested courses from other departments: <%= suggested %></p>
+          <% }; %>
+          <p><%= description2 %></p>
+        </script>
+      </div>
+      
+      <div id="program-info2-more">
+        <script id="program-info2-more-template" type="text/template">
+          <% if (typeof(quote) !== "undefined") { %>
+            <img src="img/<%= image %>" class="reflection">
+            <p style="text-align: center;"><em>"<%= quote %>"</em></p>
+            <p>Name: <%= name %></p>
+            <p>Degree: <%= degrees %></p>
+            <p>Currently: <%= currently %></p>
+            <p>Most relevant courses: <%= courses %></p>
+            <p>Reflection: <%= reflection %></p>
+          <% } else { %>
+            <img src="img/ubc.png" class="reflection">
+          <% }; %>
+        </script>
+      </div>
+        
+      <div id="show-less">Show less -</div>
+    </div>
+  
+  </div>
+  
+  <script src="main.js"></script>
+
+</body>
+</html>
