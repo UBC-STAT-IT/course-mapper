@@ -7,7 +7,7 @@
   <link rel="stylesheet" type="text/css" href="main.css">
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;700&display=swap" rel="stylesheet">
-  <title>UBC Mathematics Undergraduate Program</title>
+  <title>Stats Course Mapper</title>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-XKD62LW606"></script>
   <script>
@@ -23,7 +23,7 @@
   <div id="dashboard">
 
     <header id="header">
-      <h2>UBC Mathematics</h2>
+      <h2>[TITLE]</h2>
     </header>
       
     <div id="program-track-nav">
@@ -31,7 +31,7 @@
 
     <div id="course-info">
         <script id="course-info-template" type="text/template">
-          <h3>MATH <%= number %> <%= title %></h3>
+          <h3><%= number %> <%= title %></h3>
           <p><%= description %></p>
           <% if (prereqs.length > 0) { %>
           <h4>Prerequisites</h4>

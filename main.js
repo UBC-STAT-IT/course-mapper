@@ -6,19 +6,119 @@ d3.json("data/data.json").then(function(data) {
   const coursesTracks = data.courses_tracks;
   const reflections = data.reflections;
 
+  // Color configuration - change colors here to update both nodes and legend
+  var courseColors = {
+    'S': { color: "rgb(220, 53, 69)", label: "STAT" },   // Red for STAT courses
+    'M': { color: "rgb(40, 167, 69)", label: "MATH" },   // Green for MATH courses  
+    'D': { color: "rgb(0, 123, 255)", label: "DSCI" }    // Blue for DSCI courses
+  };
+
   var width = parseInt(d3.select("#course-map").style("width"));
   var height = parseInt(d3.select("#course-map").style("height")) - 20;
   var xscale = width/18;
   var yscale = height/10;
+  
+  // Coordinate transformation functions (zoom transform applied to container)
   var xcoord = x => x * xscale + width / 2;
   var ycoord = y => height - y * yscale - 1.5*yscale;
+  
   var svg = d3.select("#course-map svg").attr("width",width).attr("height",height);
   var highlightColor1 = "rgb(0, 85, 183)";
 
-  var requisiteLines = svg.append("g");
-  var courseNodes = svg.append("g");
-  var courseNumbers = svg.append("g");
-  var infoNodes = svg.append("g");
+  // Helper functions for course type detection and coloring
+  function getCourseType(courseNumber) {
+    var firstChar = courseNumber.toString().charAt(0).toUpperCase();
+    return firstChar;
+  }
+  
+  function getCourseColor(courseNumber, isRequired, isInList) {
+    if (isRequired || isInList) {
+      return highlightColor1; // Keep highlight behavior for required courses
+    }
+    
+    var courseType = getCourseType(courseNumber);
+    return courseColors[courseType] ? courseColors[courseType].color : "white";
+  }
+  
+  function getNumericPart(courseNumber) {
+    return courseNumber.toString().substring(1);
+  }
+
+  // Create zoom container group
+  var zoomContainer = svg.append("g").attr("class", "zoom-container");
+  
+  // Add all drawing groups to the zoom container
+  var requisiteLines = zoomContainer.append("g");
+  var courseNodes = zoomContainer.append("g");
+  var courseNumbers = zoomContainer.append("g");
+  var infoNodes = zoomContainer.append("g");
+  
+  // Define zoom behavior
+  var zoom = d3.zoom()
+    .scaleExtent([0.1, 5]) // Allow zoom from 10% to 500%
+    .on("start", function(event) {
+      // Show grabbing cursor when starting to pan
+      if (event.sourceEvent && event.sourceEvent.type === "mousedown") {
+        svg.style("cursor", "grabbing");
+      }
+    })
+    .on("zoom", function(event) {
+      zoomContainer.attr("transform", event.transform);
+    })
+    .on("end", function(event) {
+      // Return to normal cursor when done panning
+      svg.style("cursor", "default");
+    });
+  
+  // Apply zoom behavior to SVG and set default cursor
+  svg.call(zoom)
+    .style("cursor", "default");
+
+  // Create legend (not affected by zoom)
+  var legend = svg.append("g")
+    .attr("class", "legend")
+    .attr("transform", `translate(${width - 150}, ${height - 80})`);
+
+  // Generate legend data from courseColors configuration
+  var legendData = Object.keys(courseColors).map(key => courseColors[key]);
+
+  // Legend background
+  legend.append("rect")
+    .attr("x", -10)
+    .attr("y", -10)
+    .attr("width", 120)
+    .attr("height", 70)
+    .attr("fill", "white")
+    .attr("stroke", "#ccc")
+    .attr("stroke-width", 1)
+    .attr("rx", 5);
+
+  // Legend items
+  var legendItems = legend.selectAll(".legend-item")
+    .data(legendData)
+    .enter()
+    .append("g")
+    .attr("class", "legend-item")
+    .attr("transform", (d, i) => `translate(0, ${i * 20})`);
+
+  // Legend circles
+  legendItems.append("circle")
+    .attr("cx", 8)
+    .attr("cy", 8)
+    .attr("r", 6)
+    .attr("fill", d => d.color)
+    .attr("stroke", "#333")
+    .attr("stroke-width", 1);
+
+  // Legend text
+  legendItems.append("text")
+    .attr("x", 20)
+    .attr("y", 8)
+    .attr("dy", "0.35em")
+    .attr("font-family", "Arial")
+    .attr("font-size", "12px")
+    .attr("fill", "#333")
+    .text(d => d.label);
 
   var courseMapDiv = d3.select("#course-map");
   var programInfoDiv = d3.select("#program-info");
@@ -74,7 +174,24 @@ d3.json("data/data.json").then(function(data) {
   function showCourseInfo (event,course) {
     var courseInfo = courses.find(d => d.course_number == course.course_number);
     var requisiteInfo = requisites.filter(r => r.course_number == course.course_number);
-    var courseInfoObject = {"number": courseInfo.course_number,
+    
+    // Determine course prefix based on first character of course number
+    var courseNumberStr = course.course_number.toString();
+    var firstChar = courseNumberStr.charAt(0).toUpperCase();
+    var coursePrefix = "";
+    
+    if (firstChar === 'S') {
+      coursePrefix = "STAT";
+    } else if (firstChar === 'M') {
+      coursePrefix = "MATH";
+    } else if (firstChar === 'D') {
+      coursePrefix = "DSCI";
+    }
+    
+    // Remove the first character from the course number
+    var numericPart = courseNumberStr.substring(1);
+    
+    var courseInfoObject = {"number": coursePrefix + " " + numericPart + ":",
                             "title": courseInfo.title,
                             "description": courseInfo.description,
                             "prereqs": requisiteInfo.filter(requisite => requisite.type == "pre"),
@@ -94,7 +211,7 @@ d3.json("data/data.json").then(function(data) {
   function renderProgram (program,courseList,duration) {
     var course0 = {"number": "",
                    "title": "Course Information",
-                   "description": "The course map presents all MATH courses along with prerequisite/corequisite connections. Hover over a course to view the course description, a complete list of prerequisites/corequisites, credit exclusions and notes. Select progams and streams in the menu above.<br><br>The course map was created by <a href='https://patrickwalls.github.io/'>Patrick Walls</a> with contributions from <a href='https://github.com/zzzzzyzzzzz'>Karen Zhou</a> and <a href='https://github.com/LeoLee5566'>Wuyang Li</a>.<br><br><a rel='license' href='http://creativecommons.org/licenses/by-nc-sa/4.0/'><img alt='Creative Commons Licence' style='border-width:0' src='https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png' /></a><br />This work is licensed under a <a rel='license' href='http://creativecommons.org/licenses/by-nc-sa/4.0/'>Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.",
+                   "description": "The course map presents all STAT, MATH, and DSCI courses along with prerequisite/corequisite connections. Hover over a course to view the course description, a complete list of prerequisites/corequisites, credit exclusions and notes. Select programs and streams in the menu above.<br><br>The course map was created by <a href='https://patrickwalls.github.io/'>Patrick Walls</a> with contributions from <a href='https://github.com/zzzzzyzzzzz'>Karen Zhou</a> and <a href='https://github.com/LeoLee5566'>Wuyang Li</a>.<br><br><a rel='license' href='http://creativecommons.org/licenses/by-nc-sa/4.0/'><img alt='Creative Commons Licence' style='border-width:0' src='https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png' /></a><br />This work is licensed under a <a rel='license' href='http://creativecommons.org/licenses/by-nc-sa/4.0/'>Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.",
                    "prereqs": [],
                    "coreqs": [], 
                    "notes": ""};
@@ -108,7 +225,7 @@ d3.json("data/data.json").then(function(data) {
       .data(updateCoursesProgram,course => course.course_number)
       .join(function (enter) {
         enter.append("circle")
-          .attr("r",9)
+          .attr("r",12)
           .attr("fill","white")
           .attr("stroke","rgba(0,0,0,0)")
           .attr("opacity",0)
@@ -117,11 +234,11 @@ d3.json("data/data.json").then(function(data) {
           .transition()
           .delay(2*duration).duration(duration)
           .style("opacity",1)
-          .attr("fill",course => (course.required || courseList.includes(course.course_number)) ? highlightColor1 : "white")
+          .attr("fill",course => getCourseColor(course.course_number, course.required, courseList.includes(course.course_number)))
           .attr("stroke",course => (course.required || courseList.includes(course.course_number)) ? highlightColor1 : "black");
       },function (update) {
         update
-          .attr("fill",course => (course.required || courseList.includes(course.course_number)) ? highlightColor1 : "white")
+          .attr("fill",course => getCourseColor(course.course_number, course.required, courseList.includes(course.course_number)))
           .attr("stroke",course => (course.required || courseList.includes(course.course_number)) ? highlightColor1 : "black")
           .transition()
           .delay(duration).duration(duration)
@@ -144,10 +261,10 @@ d3.json("data/data.json").then(function(data) {
           .attr("x",course => xcoord(course.x))
           .attr("y",course => ycoord(course.y))
           .attr("text-anchor","middle").attr("dy","2.5px")
-          .attr("font-family","Arial").attr("font-size",8)
+          .attr("font-family","Arial").attr("font-size",11)
           .attr("fill",course => (course.required || courseList.includes(course.course_number)) ? "white" : "black")
           .attr("opacity",0)
-          .text(d => d.course_number)
+          .text(d => getNumericPart(d.course_number))
           .transition()
           .delay(2*duration).duration(duration)
           .attr("opacity",1);
@@ -168,7 +285,7 @@ d3.json("data/data.json").then(function(data) {
       .selectAll("circle")
       .data(updateCoursesProgram,course => course.course_number)
       .join("circle")
-      .attr("r", 9).style("opacity","0").style("stroke-opacity",0)
+      .attr("r", 12).style("opacity","0").style("stroke-opacity",0)
       .transition()
       .delay(duration).duration(duration)
       .attr("cx",course => xcoord(course.x))
@@ -212,7 +329,7 @@ d3.json("data/data.json").then(function(data) {
 
   function highlight (courseList) {
     courseNodes.selectAll("circle")
-      .attr("fill",course => course.required ? highlightColor1 : "white")
+      .attr("fill",course => getCourseColor(course.course_number, course.required, false))
       .attr("stroke",course => course.required ? highlightColor1 : "black")
       .filter(course => courseList ? courseList.includes(course.course_number) : false)
       .attr("fill",highlightColor1)
