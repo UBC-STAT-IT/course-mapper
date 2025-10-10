@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Layout Optimizer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+            height: 100vh;
+        }
+        
+        .sidebar {
+            width: 300px;
+            background: white;
+            border-right: 1px solid #ddd;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        h1 {
+            margin: 0 0 20px 0;
+            color: #333;
+            font-size: 20px;
+        }
+        
+        .controls {
+            background: white;
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            background: #f8f9fa;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+        }
+        
+        #canvas {
+            border: 1px solid #ddd;
+            cursor: default;
+            background: white;
+        }
+        
+        .course-item {
+            padding: 8px 12px;
+            margin: 4px 0;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .course-item:hover {
+            background: #e9ecef;
+            border-color: #007bff;
+        }
+        
+        .course-item.added {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        .course-item.added:hover {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        
+        .course-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 8px;
+        }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 0;
+            margin: 2px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h1>Course Library</h1>
+        <p><strong>Click to add/remove:</strong></p>
+        <ul style="font-size: 14px; margin: 10px 0; padding-left: 20px;">
+            <li>Gray courses: Click to add to canvas</li>
+            <li>Green courses: Already on canvas, click to remove</li>
+        </ul>
+        <div id="courseList"></div>
+        
+        <h3 style="margin-top: 30px;">Legend</h3>
+        <div class="legend-item">
+            <span>Statistics</span>
+            <div class="course-color" style="background-color: #3498db;"></div>
+        </div>
+        <div class="legend-item">
+            <span>Math</span>
+            <div class="course-color" style="background-color: #e74c3c;"></div>
+        </div>
+        <div class="legend-item">
+            <span>Data Science</span>
+            <div class="course-color" style="background-color: #f39c12;"></div>
+        </div>
+        <div class="legend-item">
+            <span>Computer Science</span>
+            <div class="course-color" style="background-color: #27ae60;"></div>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <div class="controls">
+            <button onclick="clearCanvas()">Clear Canvas</button>
+            <button onclick="toggleEdges()">Toggle Prerequisites</button>
+            <button onclick="resetView()">Reset View</button>
+            <button onclick="zoomIn()">Zoom In</button>
+            <button onclick="zoomOut()">Zoom Out</button>
+            <button onclick="exportLayout()">Export Layout</button>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="canvas" width="1200" height="800"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // Course data
+        let availableCourses = []; // All courses from JSON
+        let placedCourses = [];    // Courses placed on canvas
+        let edges = [];
+        let showEdges = true;
+        
+        // Canvas setup
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Interaction state
+        let isDragging = false;
+        let dragNode = null;
+        let mousePos = { x: 0, y: 0 };
+        let offset = { x: 0, y: 0 };
+        
+        // Zoom and pan variables
+        let zoom = 1;
+        let panX = 0;
+        let panY = 0;
+        let isPanning = false;
+        let lastPanPoint = { x: 0, y: 0 };
+        
+        // Scaling and offset for coordinate system
+        const scale = 60; // Scale factor to make coordinates visible
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        
+        // Load data from the JSON file
+        async function loadData() {
+            try {
+                const response = await fetch('./data/data.json');
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error loading data:', error);
+                // Fallback data
+                return {
+                    "courses_program1": [
+                        {"course_number": "S200", "x": -0.7653638002325049, "y": 1.8477603343760949},
+                        {"course_number": "S201", "x": 1.8477593188936845, "y": 0.765366251830813},
+                        {"course_number": "S203", "x": -1.414210747813288, "y": 1.4142163769273006},
+                        {"course_number": "S251", "x": -1.8477572879191049, "y": 0.7653711550233877},
+                        {"course_number": "S300", "x": -2.474868808673254, "y": 2.4748786596227763},
+                        {"course_number": "S301", "x": 1.4142145005584525, "y": 1.4142126241871151},
+                        {"course_number": "S302", "x": 0.7653687034277741, "y": 1.847758303408021},
+                        {"course_number": "S305", "x": 1.5307374068555482, "y": 3.695516606816042},
+                        {"course_number": "S306", "x": -1.5307276004650099, "y": 3.6955206687521898},
+                        {"course_number": "S307", "x": -3.5355268695332196, "y": 3.5355409423182516},
+                        {"course_number": "S308", "x": -4.157342072340095, "y": 2.777860128507367},
+                        {"course_number": "S321", "x": 0.9754573032714426, "y": 4.903925269566656},
+                        {"course_number": "S335", "x": -4.619393219797762, "y": 1.9134278875584694},
+                        {"course_number": "S344", "x": 2.474875375977292, "y": 2.4748720923274514},
+                        {"course_number": "S404", "x": 7.960769380065197e-06, "y": 5.999999999994719},
+                        {"course_number": "S405", "x": 2.296106110283322, "y": 5.543274910224063},
+                        {"course_number": "S406", "x": -2.296091400697515, "y": 5.543281003128285},
+                        {"course_number": "S443", "x": 9.950961725081496e-06, "y": 7.499999999993399},
+                        {"course_number": "S445", "x": -5.303290304299829, "y": 5.303311413477378},
+                        {"course_number": "S447", "x": -2.8701142508718935, "y": 6.929101253910356},
+                        {"course_number": "S449", "x": -6.929089829696643, "y": 2.870141831337704},
+                        {"course_number": "S450", "x": 2.870132637854153, "y": 6.9290936377800785},
+                        {"course_number": "S460", "x": 5.303304377094197, "y": 5.303297340701682},
+                        {"course_number": "S461", "x": 6.929097445851317, "y": 2.870123444365549},
+                        {"course_number": "M100", "x": 8.31491693502158, "y": 3.4441481332386585},
+                        {"course_number": "M101", "x": 6.363965252513037, "y": 6.363956808842018},
+                        {"course_number": "M200", "x": 3.4441591654249835, "y": 8.314912365336093},
+                        {"course_number": "M221", "x": 1.1941154070097795e-05, "y": 8.999999999992077},
+                        {"course_number": "M320", "x": -3.4441371010462722, "y": 8.314921504692427},
+                        {"course_number": "D100", "x": -6.3639483651597955, "y": 6.363973696172852},
+                        {"course_number": "D200", "x": -8.314907795635971, "y": 3.444170197605245}
+                    ],
+                    "requisites_program1": [
+                        {"course_number": "S200", "requisite_number": "M100", "requisite_is_primary": 1},
+                        {"course_number": "S201", "requisite_number": "D100", "requisite_is_primary": 1},
+                        {"course_number": "S251", "requisite_number": "M101", "requisite_is_primary": 1},
+                        {"course_number": "S300", "requisite_number": "S200", "requisite_is_primary": 1},
+                        {"course_number": "S301", "requisite_number": "S201", "requisite_is_primary": 1},
+                        {"course_number": "S301", "requisite_number": "M100", "requisite_is_primary": 1},
+                        {"course_number": "S302", "requisite_number": "M200", "requisite_is_primary": 1},
+                        {"course_number": "S305", "requisite_number": "S200", "requisite_is_primary": 1},
+                        {"course_number": "S305", "requisite_number": "S302", "requisite_is_primary": 1},
+                        {"course_number": "S305", "requisite_number": "S201", "requisite_is_primary": 1},
+                        {"course_number": "S305", "requisite_number": "D200", "requisite_is_primary": 1},
+                        {"course_number": "S306", "requisite_number": "M221", "requisite_is_primary": 1},
+                        {"course_number": "S306", "requisite_number": "S200", "requisite_is_primary": 1},
+                        {"course_number": "S306", "requisite_number": "S302", "requisite_is_primary": 1},
+                        {"course_number": "S307", "requisite_number": "S306", "requisite_is_primary": 1},
+                        {"course_number": "S321", "requisite_number": "S305", "requisite_is_primary": 1},
+                        {"course_number": "S335", "requisite_number": "S200", "requisite_is_primary": 1},
+                        {"course_number": "S344", "requisite_number": "S200", "requisite_is_primary": 1},
+                        {"course_number": "S344", "requisite_number": "S302", "requisite_is_primary": 1},
+                        {"course_number": "S404", "requisite_number": "S305", "requisite_is_primary": 1},
+                        {"course_number": "S404", "requisite_number": "M221", "requisite_is_primary": 1},
+                        {"course_number": "S404", "requisite_number": "S306", "requisite_is_primary": 1},
+                        {"course_number": "S405", "requisite_number": "S302", "requisite_is_primary": 1},
+                        {"course_number": "S405", "requisite_number": "S305", "requisite_is_primary": 1},
+                        {"course_number": "S406", "requisite_number": "S306", "requisite_is_primary": 1},
+                        {"course_number": "S406", "requisite_number": "M221", "requisite_is_primary": 1},
+                        {"course_number": "S406", "requisite_number": "S302", "requisite_is_primary": 1},
+                        {"course_number": "S443", "requisite_number": "S302", "requisite_is_primary": 1},
+                        {"course_number": "S443", "requisite_number": "S200", "requisite_is_primary": 1},
+                        {"course_number": "S443", "requisite_number": "S305", "requisite_is_primary": 1},
+                        {"course_number": "S445", "requisite_number": "S306", "requisite_is_primary": 1},
+                        {"course_number": "S447", "requisite_number": "S305", "requisite_is_primary": 1},
+                        {"course_number": "S450", "requisite_number": "S306", "requisite_is_primary": 1},
+                        {"course_number": "S460", "requisite_number": "M320", "requisite_is_primary": 1},
+                        {"course_number": "S460", "requisite_number": "S305", "requisite_is_primary": 1},
+                        {"course_number": "S460", "requisite_number": "M221", "requisite_is_primary": 1},
+                        {"course_number": "S461", "requisite_number": "S460", "requisite_is_primary": 1},
+                        {"course_number": "M101", "requisite_number": "M100", "requisite_is_primary": 1},
+                        {"course_number": "M200", "requisite_number": "M101", "requisite_is_primary": 1},
+                        {"course_number": "M221", "requisite_number": "M100", "requisite_is_primary": 1},
+                        {"course_number": "M320", "requisite_number": "M200", "requisite_is_primary": 1},
+                        {"course_number": "D200", "requisite_number": "D100", "requisite_is_primary": 1}
+                    ]
+                };
+            }
+        }
+        
+        // Initialize courses and edges
+        async function initializeData() {
+            const courseData = await loadData();
+            
+            // Store available courses for sidebar
+            availableCourses = courseData.courses_program1.map(course => ({
+                id: course.course_number,
+                originalX: course.x,
+                originalY: course.y,
+                color: getCourseColor(course.course_number),
+                label: course.course_number
+            }));
+            
+            // Store edges for when courses are placed
+            edges = courseData.requisites_program1.map(req => ({
+                from: req.requisite_number,
+                to: req.course_number,
+                isPrimary: req.requisite_is_primary === 1
+            }));
+            
+            populateSidebar();
+            render();
+        }
+        
+        function populateSidebar() {
+            const courseList = document.getElementById('courseList');
+            courseList.innerHTML = '';
+            
+            availableCourses.forEach(course => {
+                const courseItem = document.createElement('div');
+                courseItem.className = 'course-item';
+                courseItem.innerHTML = `
+                    <span>${course.label}</span>
+                    <div class="course-color" style="background-color: ${course.color};"></div>
+                `;
+                
+                courseItem.addEventListener('click', () => toggleCourseOnCanvas(course, courseItem));
+                courseList.appendChild(courseItem);
+            });
+        }
+        
+        function toggleCourseOnCanvas(courseTemplate, courseItemElement) {
+            // Check if course is already placed
+            const existingCourse = placedCourses.find(c => c.id === courseTemplate.id);
+            
+            if (existingCourse) {
+                // Remove from canvas
+                removeCourseFromCanvas(courseTemplate.id);
+            } else {
+                // Add to canvas
+                addCourseToCanvas(courseTemplate);
+            }
+        }
+        
+        function addCourseToCanvas(courseTemplate) {
+            // Check if already placed
+            if (placedCourses.find(c => c.id === courseTemplate.id)) {
+                return;
+            }
+            
+            // Add to canvas at center
+            const newCourse = {
+                id: courseTemplate.id,
+                x: canvas.width / 2 / zoom - panX / zoom,
+                y: canvas.height / 2 / zoom - panY / zoom,
+                originalX: courseTemplate.originalX,
+                originalY: courseTemplate.originalY,
+                radius: 20,
+                color: courseTemplate.color,
+                label: courseTemplate.label
+            };
+            
+            placedCourses.push(newCourse);
+            updateSidebarState();
+            render();
+        }
+        
+        function removeCourseFromCanvas(courseId) {
+            // Remove from placed courses
+            placedCourses = placedCourses.filter(course => course.id !== courseId);
+            updateSidebarState();
+            render();
+        }
+        
+        function updateSidebarState() {
+            // Update sidebar to reflect current state
+            const courseItems = document.querySelectorAll('.course-item');
+            courseItems.forEach(item => {
+                const courseLabel = item.querySelector('span').textContent;
+                const isPlaced = placedCourses.find(c => c.label === courseLabel);
+                
+                if (isPlaced) {
+                    item.classList.add('added');
+                } else {
+                    item.classList.remove('added');
+                }
+            });
+        }
+        
+        function getCourseColor(courseNumber) {
+            if (courseNumber.startsWith('S')) return '#3498db'; // Blue for Statistics
+            if (courseNumber.startsWith('M')) return '#e74c3c'; // Red for Math
+            if (courseNumber.startsWith('D')) return '#f39c12'; // Orange for Data Science
+            return '#95a5a6'; // Gray for others
+        }
+        
+        function drawNode(node) {
+            // Draw node circle
+            ctx.fillStyle = node.color;
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, node.radius, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Draw border
+            ctx.strokeStyle = '#2c3e50';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Draw label
+            ctx.fillStyle = 'white';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(node.label, node.x, node.y);
+        }
+        
+        function drawEdge(edge) {
+            if (!showEdges) return;
+            
+            const fromNode = placedCourses.find(c => c.id === edge.from);
+            const toNode = placedCourses.find(c => c.id === edge.to);
+            
+            if (!fromNode || !toNode) return;
+            
+            ctx.strokeStyle = edge.isPrimary ? '#2c3e50' : '#95a5a6';
+            ctx.lineWidth = edge.isPrimary ? 2 : 1;
+            ctx.setLineDash(edge.isPrimary ? [] : [5, 5]);
+            
+            ctx.beginPath();
+            ctx.moveTo(fromNode.x, fromNode.y);
+            ctx.lineTo(toNode.x, toNode.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        
+        // Coordinate transformation functions
+        function screenToWorld(screenX, screenY) {
+            return {
+                x: (screenX - panX) / zoom,
+                y: (screenY - panY) / zoom
+            };
+        }
+        
+        function worldToScreen(worldX, worldY) {
+            return {
+                x: worldX * zoom + panX,
+                y: worldY * zoom + panY
+            };
+        }
+        
+        function render() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Save context for transformations
+            ctx.save();
+            
+            // Apply zoom and pan transformations
+            ctx.translate(panX, panY);
+            ctx.scale(zoom, zoom);
+            
+            // Draw edges first (behind nodes)
+            if (showEdges) {
+                edges.forEach(drawEdge);
+            }
+            
+            // Draw nodes
+            placedCourses.forEach(drawNode);
+            
+            // Restore context
+            ctx.restore();
+        }
+        
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        }
+        
+        function getNodeAt(pos) {
+            // Transform screen coordinates to world coordinates
+            const worldPos = screenToWorld(pos.x, pos.y);
+            return placedCourses.find(node => {
+                const dx = worldPos.x - node.x;
+                const dy = worldPos.y - node.y;
+                return Math.sqrt(dx * dx + dy * dy) <= node.radius / zoom;
+            });
+        }
+        
+        // Event handlers
+        canvas.addEventListener('mousedown', (e) => {
+            mousePos = getMousePos(e);
+            
+            if (e.button === 0) { // Left click
+                dragNode = getNodeAt(mousePos);
+                
+                if (dragNode) {
+                    isDragging = true;
+                    const worldPos = screenToWorld(mousePos.x, mousePos.y);
+                    offset.x = worldPos.x - dragNode.x;
+                    offset.y = worldPos.y - dragNode.y;
+                    canvas.style.cursor = 'grabbing';
+                } else {
+                    // Start panning
+                    isPanning = true;
+                    lastPanPoint = { x: mousePos.x, y: mousePos.y };
+                    canvas.style.cursor = 'move';
+                }
+            }
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            mousePos = getMousePos(e);
+            
+            if (isDragging && dragNode) {
+                const worldPos = screenToWorld(mousePos.x, mousePos.y);
+                dragNode.x = worldPos.x - offset.x;
+                dragNode.y = worldPos.y - offset.y;
+                render();
+            } else if (isPanning) {
+                const dx = mousePos.x - lastPanPoint.x;
+                const dy = mousePos.y - lastPanPoint.y;
+                panX += dx;
+                panY += dy;
+                lastPanPoint = { x: mousePos.x, y: mousePos.y };
+                render();
+            } else {
+                const node = getNodeAt(mousePos);
+                canvas.style.cursor = node ? 'grab' : 'default';
+            }
+        });
+        
+        canvas.addEventListener('mouseup', (e) => {
+            isDragging = false;
+            isPanning = false;
+            dragNode = null;
+            canvas.style.cursor = 'default';
+        });
+        
+        canvas.addEventListener('click', (e) => {
+            // Click handler removed - courses are added from sidebar
+        });
+        
+        // Zoom with mouse wheel
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            
+            const mousePos = getMousePos(e);
+            const worldPosBeforeZoom = screenToWorld(mousePos.x, mousePos.y);
+            
+            // Zoom factor
+            const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+            const newZoom = Math.max(0.1, Math.min(5, zoom * zoomFactor));
+            
+            // Adjust pan to keep mouse position stable
+            const worldPosAfterZoom = {
+                x: (mousePos.x - panX) / newZoom,
+                y: (mousePos.y - panY) / newZoom
+            };
+            
+            panX += (worldPosAfterZoom.x - worldPosBeforeZoom.x) * newZoom;
+            panY += (worldPosAfterZoom.y - worldPosBeforeZoom.y) * newZoom;
+            
+            zoom = newZoom;
+            render();
+        });
+        
+        // Control functions
+        function clearCanvas() {
+            placedCourses = [];
+            updateSidebarState();
+            render();
+        }
+        
+        function toggleEdges() {
+            showEdges = !showEdges;
+            render();
+        }
+        
+        function exportLayout() {
+            const layout = placedCourses.map(node => ({
+                course_number: node.id,
+                x: node.x,
+                y: node.y
+            }));
+            
+            const dataStr = JSON.stringify(layout, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'optimized_layout.json';
+            link.click();
+            
+            URL.revokeObjectURL(url);
+        }
+        
+        // Zoom and pan control functions
+        function resetView() {
+            zoom = 1;
+            panX = 0;
+            panY = 0;
+            render();
+        }
+        
+        function zoomIn() {
+            zoom = Math.min(5, zoom * 1.2);
+            render();
+        }
+        
+        function zoomOut() {
+            zoom = Math.max(0.1, zoom * 0.8);
+            render();
+        }
+        
+        // Initialize and start
+        initializeData();
+    </script>
+</body>
+</html>
