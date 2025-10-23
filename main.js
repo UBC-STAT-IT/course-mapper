@@ -198,14 +198,18 @@ d3.json("data/data.json").then(function(data) {
                             "coreqs": requisiteInfo.filter(requisite => requisite.type == "co"),
                             "notes": courseInfo.notes};
     courseInfoDiv.html(courseInfoTemplate(courseInfoObject));
-    requisiteLines.selectAll("line").filter(requisite => requisite.course_number == course.course_number).attr("opacity",1);
+    // Show prerequisite lines for this course (both incoming and outgoing)
+    requisiteLines.selectAll("line")
+      .filter(requisite => requisite.course_number == course.course_number || requisite.requisite_number == course.course_number)
+      .attr("opacity", requisite => requisite.requisite_is_primary == 1 ? 0.7 : 0.4);
   };
 
   function hideCourseInfo (event,course) {
+    // Hide all prerequisite lines when not hovering
     requisiteLines
       .selectAll("line")
-      .filter(requisite => requisite.course_number == course.course_number)
-      .attr("opacity",requisite => requisite.requisite_is_primary == 1 ? 0.2 : 0);
+      .filter(requisite => requisite.course_number == course.course_number || requisite.requisite_number == course.course_number)
+      .attr("opacity", 0);
   };
 
   function renderProgram (program,courseList,duration) {
@@ -309,7 +313,7 @@ d3.json("data/data.json").then(function(data) {
           .attr("opacity",0)
           .transition()
           .delay(2*duration).duration(duration)
-          .attr("opacity",requisite => requisite.requisite_is_primary == 1 ? 0.2 : 0);
+          .attr("opacity",0); // Changed: lines are invisible by default
       },function (update) {
         update
           .transition()
@@ -318,7 +322,7 @@ d3.json("data/data.json").then(function(data) {
           .attr("y1",requisite => ycoord(requisite.course_y))
           .attr("x2",requisite => xcoord(requisite.requisite_x))
           .attr("y2",requisite => ycoord(requisite.requisite_y))
-          .attr("opacity",requisite => requisite.requisite_is_primary == 1 ? 0.2 : 0);
+          .attr("opacity",0); // Changed: lines are invisible by default
       },function (exit) {
         exit.transition()
           .duration(duration)
