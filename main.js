@@ -8,9 +8,10 @@ d3.json("data/data.json").then(function(data) {
 
   // Color configuration - change colors here to update both nodes and legend
   var courseColors = {
-    'S': { color: "rgb(220, 53, 69)", label: "STAT" },   // Red for STAT courses
-    'M': { color: "rgb(40, 167, 69)", label: "MATH" },   // Green for MATH courses  
-    'D': { color: "rgb(0, 123, 255)", label: "DSCI" }    // Blue for DSCI courses
+    'S': { color: "#00a896", label: "STAT" },  
+    // 'S': { color: "rgb(50, 159, 91)", label: "STAT" },
+    'M': { color: "#e84855", label: "MATH" }, 
+    'D': { color: "#ffba49", label: "DSCI" }
   };
 
   var width = parseInt(d3.select("#course-map").style("width"));
@@ -25,49 +26,75 @@ d3.json("data/data.json").then(function(data) {
   var svg = d3.select("#course-map svg").attr("width",width).attr("height",height);
   var highlightColor1 = "rgb(0, 85, 183)";
 
-  // Add checkbox for prerequisite lines
+  // Add checkboxes for prerequisite lines and fill circle
   var linesVisible = true; // Default state - lines visible
+  var fillCircles = true; // Default state - circles filled with color
   
   // Create checkbox container in top right of SVG canvas
   var checkboxContainer = svg.append("foreignObject")
     .attr("x", width - 180)
     .attr("y", 10)
     .attr("width", 170)
-    .attr("height", 30)
+    .attr("height", 60)
     .append("xhtml:div")
     .style("background", "rgba(255, 255, 255, 0.9)")
     .style("padding", "6px 10px")
     .style("font-family", "Arial")
     .style("font-size", "12px")
     .style("display", "flex")
-    .style("align-items", "center")
+    .style("flex-direction", "column")
     .style("gap", "6px")
-    .style("cursor", "pointer")
     .style("user-select", "none");
 
-  // Add checkbox input
-  var checkbox = checkboxContainer.append("input")
+  // First checkbox row for lines
+  var linesRow = checkboxContainer.append("div")
+    .style("display", "flex")
+    .style("align-items", "center")
+    .style("gap", "6px")
+    .style("cursor", "pointer");
+
+  var linesCheckbox = linesRow.append("input")
     .attr("type", "checkbox")
     .attr("checked", linesVisible)
     .style("cursor", "pointer");
 
-  // Add label
-  checkboxContainer.append("span")
+  linesRow.append("span")
     .text("TESTING: show lines")
     .style("color", "#333")
     .style("cursor", "pointer");
 
-  // Add click handler for checkbox
-  checkboxContainer.on("click", function(event) {
-    // Prevent double-triggering when clicking the checkbox itself
+  // Second checkbox row for fill circles
+  var fillRow = checkboxContainer.append("div")
+    .style("display", "flex")
+    .style("align-items", "center")
+    .style("gap", "6px")
+    .style("cursor", "pointer");
+
+  var fillCheckbox = fillRow.append("input")
+    .attr("type", "checkbox")
+    .attr("checked", fillCircles)
+    .style("cursor", "pointer");
+
+  fillRow.append("span")
+    .text("TESTING: fill circle")
+    .style("color", "#333")
+    .style("cursor", "pointer");
+
+  // Add click handlers for checkboxes
+  linesRow.on("click", function(event) {
     if (event.target.tagName !== 'INPUT') {
-      checkbox.property("checked", !checkbox.property("checked"));
+      linesCheckbox.property("checked", !linesCheckbox.property("checked"));
     }
-    
-    linesVisible = checkbox.property("checked");
-    
-    // Update line visibility
+    linesVisible = linesCheckbox.property("checked");
     updateLineVisibility();
+  });
+
+  fillRow.on("click", function(event) {
+    if (event.target.tagName !== 'INPUT') {
+      fillCheckbox.property("checked", !fillCheckbox.property("checked"));
+    }
+    fillCircles = fillCheckbox.property("checked");
+    updateCircleColors();
   });
 
   function updateLineVisibility() {
@@ -78,6 +105,13 @@ d3.json("data/data.json").then(function(data) {
         } else {
           return 0;
         }
+      });
+  }
+
+  function updateCircleColors() {
+    courseNodes.selectAll("circle")
+      .attr("fill", function(d) {
+        return getCourseColor(d.course_number, d.required, false);
       });
   }
 
@@ -92,8 +126,21 @@ d3.json("data/data.json").then(function(data) {
       return highlightColor1; // Keep highlight behavior for required courses
     }
     
+    if (fillCircles) {
+      var courseType = getCourseType(courseNumber);
+      return courseColors[courseType] ? courseColors[courseType].color : "white";
+    }
+    
+    return "white"; // Return white for fill when not filling
+  }
+  
+  function getCourseStrokeColor(courseNumber, isRequired, isInList) {
+    if (isRequired || isInList) {
+      return highlightColor1; // Keep highlight behavior for required courses
+    }
+    
     var courseType = getCourseType(courseNumber);
-    return courseColors[courseType] ? courseColors[courseType].color : "white";
+    return courseColors[courseType] ? courseColors[courseType].color : "black";
   }
   
   function getNumericPart(courseNumber) {
@@ -360,11 +407,11 @@ d3.json("data/data.json").then(function(data) {
           .delay(2*duration).duration(duration)
           .style("opacity",1)
           .attr("fill",course => getCourseColor(course.course_number, course.required, courseList.includes(course.course_number)))
-          .attr("stroke",course => (course.required || courseList.includes(course.course_number)) ? highlightColor1 : "black");
+          .attr("stroke",course => getCourseStrokeColor(course.course_number, course.required, courseList.includes(course.course_number)));
       },function (update) {
         update
           .attr("fill",course => getCourseColor(course.course_number, course.required, courseList.includes(course.course_number)))
-          .attr("stroke",course => (course.required || courseList.includes(course.course_number)) ? highlightColor1 : "black")
+          .attr("stroke",course => getCourseStrokeColor(course.course_number, course.required, courseList.includes(course.course_number)))
           .transition()
           .delay(duration).duration(duration)
           .attr("cx",course => xcoord(course.x))
@@ -455,7 +502,7 @@ d3.json("data/data.json").then(function(data) {
   function highlight (courseList) {
     courseNodes.selectAll("circle")
       .attr("fill",course => getCourseColor(course.course_number, course.required, false))
-      .attr("stroke",course => course.required ? highlightColor1 : "black")
+      .attr("stroke",course => getCourseStrokeColor(course.course_number, course.required, false))
       .filter(course => courseList ? courseList.includes(course.course_number) : false)
       .attr("fill",highlightColor1)
       .attr("stroke",highlightColor1);
