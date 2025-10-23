@@ -25,6 +25,62 @@ d3.json("data/data.json").then(function(data) {
   var svg = d3.select("#course-map svg").attr("width",width).attr("height",height);
   var highlightColor1 = "rgb(0, 85, 183)";
 
+  // Add checkbox for prerequisite lines
+  var linesVisible = true; // Default state - lines visible
+  
+  // Create checkbox container in top right of SVG canvas
+  var checkboxContainer = svg.append("foreignObject")
+    .attr("x", width - 180)
+    .attr("y", 10)
+    .attr("width", 170)
+    .attr("height", 30)
+    .append("xhtml:div")
+    .style("background", "rgba(255, 255, 255, 0.9)")
+    .style("padding", "6px 10px")
+    .style("font-family", "Arial")
+    .style("font-size", "12px")
+    .style("display", "flex")
+    .style("align-items", "center")
+    .style("gap", "6px")
+    .style("cursor", "pointer")
+    .style("user-select", "none");
+
+  // Add checkbox input
+  var checkbox = checkboxContainer.append("input")
+    .attr("type", "checkbox")
+    .attr("checked", linesVisible)
+    .style("cursor", "pointer");
+
+  // Add label
+  checkboxContainer.append("span")
+    .text("TESTING: show lines")
+    .style("color", "#333")
+    .style("cursor", "pointer");
+
+  // Add click handler for checkbox
+  checkboxContainer.on("click", function(event) {
+    // Prevent double-triggering when clicking the checkbox itself
+    if (event.target.tagName !== 'INPUT') {
+      checkbox.property("checked", !checkbox.property("checked"));
+    }
+    
+    linesVisible = checkbox.property("checked");
+    
+    // Update line visibility
+    updateLineVisibility();
+  });
+
+  function updateLineVisibility() {
+    requisiteLines.selectAll("line")
+      .attr("opacity", function(d) {
+        if (linesVisible) {
+          return d.requisite_is_primary == 1 ? 0.2 : 0;
+        } else {
+          return 0;
+        }
+      });
+  }
+
   // Helper functions for course type detection and coloring
   function getCourseType(courseNumber) {
     var firstChar = courseNumber.toString().charAt(0).toUpperCase();
@@ -198,18 +254,83 @@ d3.json("data/data.json").then(function(data) {
                             "coreqs": requisiteInfo.filter(requisite => requisite.type == "co"),
                             "notes": courseInfo.notes};
     courseInfoDiv.html(courseInfoTemplate(courseInfoObject));
-    // Show prerequisite lines for this course (both incoming and outgoing)
-    requisiteLines.selectAll("line")
-      .filter(requisite => requisite.course_number == course.course_number || requisite.requisite_number == course.course_number)
-      .attr("opacity", requisite => requisite.requisite_is_primary == 1 ? 0.7 : 0.4);
+    
+    // Get prerequisite course numbers for this course
+    var prerequisiteCourses = data["requisites_program" + data.programs[0].program_id]
+      .filter(requisite => requisite.course_number == course.course_number)
+      .map(requisite => requisite.requisite_number);
+    
+    // Add the current course to the list
+    var coursesToHighlight = [course.course_number, ...prerequisiteCourses];
+    
+    // Make the hovered course and its prerequisites bigger
+    courseNodes.selectAll("circle")
+      .filter(d => coursesToHighlight.includes(d.course_number))
+      .transition()
+      .duration(200)
+      .attr("r", 16); // Increase from 12 to 16
+    
+    // Reduce opacity of all other courses
+    courseNodes.selectAll("circle")
+      .filter(d => !coursesToHighlight.includes(d.course_number))
+      .transition()
+      .duration(200)
+      .style("opacity", 0.3);
+    
+    // Make the course numbers bigger too
+    courseNumbers.selectAll("text")
+      .filter(d => coursesToHighlight.includes(d.course_number))
+      .transition()
+      .duration(200)
+      .attr("font-size", 14); // Increase from 11 to 14
+    
+    // Reduce opacity of other course numbers
+    courseNumbers.selectAll("text")
+      .filter(d => !coursesToHighlight.includes(d.course_number))
+      .transition()
+      .duration(200)
+      .style("opacity", 0.3);
+    
+    // Update invisible info nodes to match
+    infoNodes.selectAll("circle")
+      .filter(d => coursesToHighlight.includes(d.course_number))
+      .transition()
+      .duration(200)
+      .attr("r", 16);
+    
+    // Show prerequisite lines for this course when hovering, regardless of toggle state
+    requisiteLines.selectAll("line").filter(requisite => requisite.course_number == course.course_number).attr("opacity",1);
   };
 
   function hideCourseInfo (event,course) {
-    // Hide all prerequisite lines when not hovering
+    // Return course circles to normal size - interrupt any ongoing transitions
+    courseNodes.selectAll("circle")
+      .interrupt()
+      .transition()
+      .duration(200)
+      .attr("r", 12) // Back to normal size for ALL courses
+      .style("opacity", 1); // Restore opacity
+    
+    // Return course numbers to normal size - interrupt any ongoing transitions
+    courseNumbers.selectAll("text")
+      .interrupt()
+      .transition()
+      .duration(200)
+      .attr("font-size", 11) // Back to normal size for ALL course numbers
+      .style("opacity", 1); // Restore opacity
+    
+    // Return invisible info nodes to normal size - interrupt any ongoing transitions
+    infoNodes.selectAll("circle")
+      .interrupt()
+      .transition()
+      .duration(200)
+      .attr("r", 12); // Back to normal size for ALL info nodes
+    
+    // Hide the prerequisite lines when hover ends
     requisiteLines
       .selectAll("line")
-      .filter(requisite => requisite.course_number == course.course_number || requisite.requisite_number == course.course_number)
-      .attr("opacity", 0);
+      .filter(requisite => requisite.course_number == course.course_number)
+      .attr("opacity", linesVisible ? (requisite => requisite.requisite_is_primary == 1 ? 0.2 : 0) : 0);
   };
 
   function renderProgram (program,courseList,duration) {
@@ -313,7 +434,7 @@ d3.json("data/data.json").then(function(data) {
           .attr("opacity",0)
           .transition()
           .delay(2*duration).duration(duration)
-          .attr("opacity",0); // Changed: lines are invisible by default
+          .attr("opacity",requisite => linesVisible ? (requisite.requisite_is_primary == 1 ? 0.2 : 0) : 0);
       },function (update) {
         update
           .transition()
@@ -322,7 +443,7 @@ d3.json("data/data.json").then(function(data) {
           .attr("y1",requisite => ycoord(requisite.course_y))
           .attr("x2",requisite => xcoord(requisite.requisite_x))
           .attr("y2",requisite => ycoord(requisite.requisite_y))
-          .attr("opacity",0); // Changed: lines are invisible by default
+          .attr("opacity",requisite => linesVisible ? (requisite.requisite_is_primary == 1 ? 0.2 : 0) : 0);
       },function (exit) {
         exit.transition()
           .duration(duration)
