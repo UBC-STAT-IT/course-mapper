@@ -347,6 +347,90 @@ d3.json("data/data.json").then(function(data) {
     
     // Show prerequisite lines for this course when hovering, regardless of toggle state
     requisiteLines.selectAll("line").filter(requisite => requisite.course_number == course.course_number).attr("opacity",1);
+    
+    // Special case for MATH 100 - create burst effect with additional circles
+    // This happens when hovering on M100 OR any course that has M100 as a prerequisite
+    var shouldBurst = course.course_number == 'M100' || prerequisiteCourses.includes('M100');
+    
+    if (shouldBurst) {
+      // Find MATH 100 course for positioning
+      var math100Course = data["courses_program" + data.programs[0].program_id].find(c => c.course_number == 'M100');
+      
+      if (math100Course) {
+        var burstCircles = courseNodes.selectAll(".burst-circle")
+          .data([1, 2, 3, 4]); // 4 additional circles
+        
+        burstCircles.enter()
+          .append("circle")
+          .attr("class", "burst-circle")
+          .attr("cx", xcoord(math100Course.x))
+          .attr("cy", ycoord(math100Course.y))
+          .attr("r", 0)
+          .attr("fill", "#ffba49")
+          .attr("stroke", "#333")
+          .attr("stroke-width", 1)
+          .transition()
+          .duration(300)
+          .attr("r", 14)
+          .attr("cx", function(d, i) {
+            // Position circles around the original: left, right, top, bottom
+            var positions = [
+              xcoord(math100Course.x) - 60, // left (increased spacing)
+              xcoord(math100Course.x) + 60, // right (increased spacing)
+              xcoord(math100Course.x) - 40, // top-left (increased spacing)
+              xcoord(math100Course.x) + 40  // top-right (increased spacing)
+            ];
+            return positions[i];
+          })
+          .attr("cy", function(d, i) {
+            var positions = [
+              ycoord(math100Course.y),      // left (same y)
+              ycoord(math100Course.y),      // right (same y)
+              ycoord(math100Course.y) - 45, // top-left (increased spacing)
+              ycoord(math100Course.y) - 45  // top-right (increased spacing)
+            ];
+            return positions[i];
+          });
+        
+        // Add text to burst circles
+        var burstText = courseNumbers.selectAll(".burst-text")
+          .data([1, 2, 3, 4]);
+        
+        burstText.enter()
+          .append("text")
+          .attr("class", "burst-text")
+          .attr("x", xcoord(math100Course.x))
+          .attr("y", ycoord(math100Course.y))
+          .attr("text-anchor", "middle")
+          .attr("dy", "2.5px")
+          .attr("font-family", "Arial")
+          .attr("font-size", 9)
+          .attr("fill", "black")
+          .attr("opacity", 0)
+          .text("TEST")
+          .transition()
+          .duration(300)
+          .attr("opacity", 1)
+          .attr("x", function(d, i) {
+            var positions = [
+              xcoord(math100Course.x) - 60, // left (increased spacing)
+              xcoord(math100Course.x) + 60, // right (increased spacing)
+              xcoord(math100Course.x) - 40, // top-left (increased spacing)
+              xcoord(math100Course.x) + 40  // top-right (increased spacing)
+            ];
+            return positions[i];
+          })
+          .attr("y", function(d, i) {
+            var positions = [
+              ycoord(math100Course.y),      // left (same y)
+              ycoord(math100Course.y),      // right (same y)
+              ycoord(math100Course.y) - 45, // top-left (increased spacing)
+              ycoord(math100Course.y) - 45  // top-right (increased spacing)
+            ];
+            return positions[i];
+          });
+      }
+    }
   };
 
   function hideCourseInfo (event,course) {
@@ -378,6 +462,28 @@ d3.json("data/data.json").then(function(data) {
       .selectAll("line")
       .filter(requisite => requisite.course_number == course.course_number)
       .attr("opacity", linesVisible ? (requisite => requisite.requisite_is_primary == 1 ? 0.2 : 0) : 0);
+    
+    // Remove burst circles for MATH 100 (whether hovering on M100 or courses that have M100 as prereq)
+    var prerequisiteCourses = data["requisites_program" + data.programs[0].program_id]
+      .filter(requisite => requisite.course_number == course.course_number)
+      .map(requisite => requisite.requisite_number);
+    
+    var shouldRemoveBurst = course.course_number == 'M100' || prerequisiteCourses.includes('M100');
+    
+    if (shouldRemoveBurst) {
+      courseNodes.selectAll(".burst-circle")
+        .transition()
+        .duration(200)
+        .attr("r", 0)
+        .attr("opacity", 0)
+        .remove();
+      
+      courseNumbers.selectAll(".burst-text")
+        .transition()
+        .duration(200)
+        .attr("opacity", 0)
+        .remove();
+    }
   };
 
   function renderProgram (program,courseList,duration) {
