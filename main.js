@@ -29,13 +29,14 @@ d3.json("data/data.json").then(function(data) {
   // Add checkboxes for prerequisite lines and fill circle
   var linesVisible = true; // Default state - lines visible
   var fillCircles = true; // Default state - circles filled with color
+  var prereqChainEnabled = true; // Default state - prerequisite chain highlighting enabled
   
   // Create checkbox container in top right of SVG canvas
   var checkboxContainer = svg.append("foreignObject")
     .attr("x", width - 180)
     .attr("y", 10)
     .attr("width", 170)
-    .attr("height", 60)
+    .attr("height", 90)
     .append("xhtml:div")
     .style("background", "rgba(255, 255, 255, 0.9)")
     .style("padding", "6px 10px")
@@ -80,6 +81,23 @@ d3.json("data/data.json").then(function(data) {
     .style("color", "#333")
     .style("cursor", "pointer");
 
+  // Third checkbox row for prerequisite chain
+  var chainRow = checkboxContainer.append("div")
+    .style("display", "flex")
+    .style("align-items", "center")
+    .style("gap", "6px")
+    .style("cursor", "pointer");
+
+  var chainCheckbox = chainRow.append("input")
+    .attr("type", "checkbox")
+    .attr("checked", prereqChainEnabled)
+    .style("cursor", "pointer");
+
+  chainRow.append("span")
+    .text("TESTING: prereq chain")
+    .style("color", "#333")
+    .style("cursor", "pointer");
+
   // Add click handlers for checkboxes
   linesRow.on("click", function(event) {
     if (event.target.tagName !== 'INPUT') {
@@ -95,6 +113,13 @@ d3.json("data/data.json").then(function(data) {
     }
     fillCircles = fillCheckbox.property("checked");
     updateCircleColors();
+  });
+
+  chainRow.on("click", function(event) {
+    if (event.target.tagName !== 'INPUT') {
+      chainCheckbox.property("checked", !chainCheckbox.property("checked"));
+    }
+    prereqChainEnabled = chainCheckbox.property("checked");
   });
 
   function updateLineVisibility() {
@@ -302,10 +327,34 @@ d3.json("data/data.json").then(function(data) {
                             "notes": courseInfo.notes};
     courseInfoDiv.html(courseInfoTemplate(courseInfoObject));
     
-    // Get prerequisite course numbers for this course
-    var prerequisiteCourses = data["requisites_program" + data.programs[0].program_id]
+    // Get direct prerequisites for this course
+    var directPrereqs = data["requisites_program" + data.programs[0].program_id]
       .filter(requisite => requisite.course_number == course.course_number)
       .map(requisite => requisite.requisite_number);
+    
+    // Get prerequisite course numbers for this course (including recursive prereqs if enabled)
+    function getPrerequisiteChain(courseNumber, visited = new Set()) {
+      if (visited.has(courseNumber)) {
+        return []; // Prevent infinite loops
+      }
+      visited.add(courseNumber);
+      
+      var directPrereqs = data["requisites_program" + data.programs[0].program_id]
+        .filter(requisite => requisite.course_number == courseNumber)
+        .map(requisite => requisite.requisite_number);
+      
+      var allPrereqs = [...directPrereqs];
+      
+      // Recursively get prerequisites of prerequisites
+      directPrereqs.forEach(prereq => {
+        var chainPrereqs = getPrerequisiteChain(prereq, new Set(visited));
+        allPrereqs = allPrereqs.concat(chainPrereqs);
+      });
+      
+      return [...new Set(allPrereqs)]; // Remove duplicates
+    }
+    
+    var prerequisiteCourses = prereqChainEnabled ? getPrerequisiteChain(course.course_number) : directPrereqs;
     
     // Add the current course to the list
     var coursesToHighlight = [course.course_number, ...prerequisiteCourses];
@@ -345,12 +394,25 @@ d3.json("data/data.json").then(function(data) {
       .duration(200)
       .attr("r", 16);
     
-    // Show prerequisite lines for this course when hovering, regardless of toggle state
-    requisiteLines.selectAll("line").filter(requisite => requisite.course_number == course.course_number).attr("opacity",1);
+    // Show prerequisite lines for this course and its chain when hovering, regardless of toggle state
+    // When chain is enabled: show all lines within the highlighted set
+    // When chain is disabled: only show lines directly from the hovered course to its direct prereqs
+    if (prereqChainEnabled) {
+      coursesToHighlight.forEach(courseNum => {
+        requisiteLines.selectAll("line")
+          .filter(requisite => requisite.course_number == courseNum && coursesToHighlight.includes(requisite.requisite_number))
+          .attr("opacity", 1);
+      });
+    } else {
+      // Only show lines from the hovered course to its direct prerequisites
+      requisiteLines.selectAll("line")
+        .filter(requisite => requisite.course_number == course.course_number && directPrereqs.includes(requisite.requisite_number))
+        .attr("opacity", 1);
+    }
     
     // Special case for MATH 100 - create burst effect with additional circles
-    // This happens when hovering on M100 OR any course that has M100 as a prerequisite
-    var shouldBurst = course.course_number == 'M100' || prerequisiteCourses.includes('M100');
+    // This happens when hovering on M100 OR any course that has M100 in its prerequisite chain
+    var shouldBurst = course.course_number == 'M100' || (prereqChainEnabled && prerequisiteCourses.includes('M100')) || (!prereqChainEnabled && directPrereqs.includes('M100'));
     
     if (shouldBurst) {
       // Find MATH 100 course for positioning
@@ -458,17 +520,53 @@ d3.json("data/data.json").then(function(data) {
       .attr("r", 12); // Back to normal size for ALL info nodes
     
     // Hide the prerequisite lines when hover ends
-    requisiteLines
-      .selectAll("line")
-      .filter(requisite => requisite.course_number == course.course_number)
-      .attr("opacity", linesVisible ? (requisite => requisite.requisite_is_primary == 1 ? 0.2 : 0) : 0);
-    
-    // Remove burst circles for MATH 100 (whether hovering on M100 or courses that have M100 as prereq)
-    var prerequisiteCourses = data["requisites_program" + data.programs[0].program_id]
+    // Get direct prerequisites for this course
+    var directPrereqs = data["requisites_program" + data.programs[0].program_id]
       .filter(requisite => requisite.course_number == course.course_number)
       .map(requisite => requisite.requisite_number);
     
-    var shouldRemoveBurst = course.course_number == 'M100' || prerequisiteCourses.includes('M100');
+    function getPrerequisiteChain(courseNumber, visited = new Set()) {
+      if (visited.has(courseNumber)) {
+        return []; // Prevent infinite loops
+      }
+      visited.add(courseNumber);
+      
+      var directPrereqs = data["requisites_program" + data.programs[0].program_id]
+        .filter(requisite => requisite.course_number == courseNumber)
+        .map(requisite => requisite.requisite_number);
+      
+      var allPrereqs = [...directPrereqs];
+      
+      // Recursively get prerequisites of prerequisites
+      directPrereqs.forEach(prereq => {
+        var chainPrereqs = getPrerequisiteChain(prereq, new Set(visited));
+        allPrereqs = allPrereqs.concat(chainPrereqs);
+      });
+      
+      return [...new Set(allPrereqs)]; // Remove duplicates
+    }
+    
+    var prerequisiteChain = prereqChainEnabled ? getPrerequisiteChain(course.course_number) : directPrereqs;
+    var allCoursesToHide = [course.course_number, ...prerequisiteChain];
+    
+    // Hide lines based on the same logic as showing them
+    if (prereqChainEnabled) {
+      allCoursesToHide.forEach(courseNum => {
+        requisiteLines
+          .selectAll("line")
+          .filter(requisite => requisite.course_number == courseNum && allCoursesToHide.includes(requisite.requisite_number))
+          .attr("opacity", linesVisible ? (requisite => requisite.requisite_is_primary == 1 ? 0.2 : 0) : 0);
+      });
+    } else {
+      // Only hide lines from the hovered course to its direct prerequisites
+      requisiteLines
+        .selectAll("line")
+        .filter(requisite => requisite.course_number == course.course_number && directPrereqs.includes(requisite.requisite_number))
+        .attr("opacity", linesVisible ? (requisite => requisite.requisite_is_primary == 1 ? 0.2 : 0) : 0);
+    }
+    
+    // Remove burst circles for MATH 100 (whether hovering on M100 or courses that have M100 in prereq chain)
+    var shouldRemoveBurst = course.course_number == 'M100' || (prereqChainEnabled && prerequisiteChain.includes('M100')) || (!prereqChainEnabled && directPrereqs.includes('M100'));
     
     if (shouldRemoveBurst) {
       courseNodes.selectAll(".burst-circle")
