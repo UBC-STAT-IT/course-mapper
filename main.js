@@ -17,8 +17,8 @@ d3.json("data/data.json").then(function(data) {
 
   var width = parseInt(d3.select("#course-map").style("width"));
   var height = parseInt(d3.select("#course-map").style("height")) - 20;
-  var xscale = width/18;
-  var yscale = height/10;
+  var xscale = width/30;
+  var yscale = height/18;
   
   // Coordinate transformation functions (zoom transform applied to container)
   var xcoord = x => x * xscale + width / 2;
