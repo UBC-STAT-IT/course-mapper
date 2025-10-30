@@ -5,6 +5,7 @@ d3.json("data/data.json").then(function(data) {
   const tracks = data.tracks;
   const coursesTracks = data.courses_tracks;
   const reflections = data.reflections;
+  const equivalencies = data.equivalencies;
 
   // Color configuration - change colors here to update both nodes and legend
   var courseColors = {
@@ -29,14 +30,15 @@ d3.json("data/data.json").then(function(data) {
   // Add checkboxes for prerequisite lines and fill circle
   var linesVisible = true; // Default state - lines visible
   var fillCircles = true; // Default state - circles filled with color
-  var prereqChainEnabled = true; // Default state - prerequisite chain highlighting enabled
+  var prereqChainEnabled = false; // Default state - prerequisite chain highlighting disabled
+  var burstEffectsEnabled = true; // Default state - burst effects enabled
   
   // Create checkbox container in top right of SVG canvas
   var checkboxContainer = svg.append("foreignObject")
     .attr("x", width - 180)
     .attr("y", 10)
     .attr("width", 170)
-    .attr("height", 90)
+    .attr("height", 115)
     .append("xhtml:div")
     .style("background", "rgba(255, 255, 255, 0.9)")
     .style("padding", "6px 10px")
@@ -90,11 +92,28 @@ d3.json("data/data.json").then(function(data) {
 
   var chainCheckbox = chainRow.append("input")
     .attr("type", "checkbox")
-    .attr("checked", prereqChainEnabled)
+    .property("checked", prereqChainEnabled)
     .style("cursor", "pointer");
 
   chainRow.append("span")
     .text("TESTING: prereq chain")
+    .style("color", "#333")
+    .style("cursor", "pointer");
+
+  // Fourth checkbox row for burst effects
+  var burstRow = checkboxContainer.append("div")
+    .style("display", "flex")
+    .style("align-items", "center")
+    .style("gap", "6px")
+    .style("cursor", "pointer");
+
+  var burstCheckbox = burstRow.append("input")
+    .attr("type", "checkbox")
+    .attr("checked", burstEffectsEnabled)
+    .style("cursor", "pointer");
+
+  burstRow.append("span")
+    .text("TESTING: burst effects")
     .style("color", "#333")
     .style("cursor", "pointer");
 
@@ -120,6 +139,13 @@ d3.json("data/data.json").then(function(data) {
       chainCheckbox.property("checked", !chainCheckbox.property("checked"));
     }
     prereqChainEnabled = chainCheckbox.property("checked");
+  });
+
+  burstRow.on("click", function(event) {
+    if (event.target.tagName !== 'INPUT') {
+      burstCheckbox.property("checked", !burstCheckbox.property("checked"));
+    }
+    burstEffectsEnabled = burstCheckbox.property("checked");
   });
 
   function updateLineVisibility() {
@@ -410,89 +436,107 @@ d3.json("data/data.json").then(function(data) {
         .attr("opacity", 1);
     }
     
-    // Special case for MATH 100 - create burst effect with additional circles
-    // This happens when hovering on M100 OR any course that has M100 in its prerequisite chain
-    var shouldBurst = course.course_number == 'M100' || (prereqChainEnabled && prerequisiteCourses.includes('M100')) || (!prereqChainEnabled && directPrereqs.includes('M100'));
+    // Check for burst effect based on equivalencies data
+    // Find all courses in our highlighted set that have equivalencies defined
+    var allBurstData = [];
     
-    if (shouldBurst) {
-      // Find MATH 100 course for positioning
-      var math100Course = data["courses_program" + data.programs[0].program_id].find(c => c.course_number == 'M100');
-      
-      if (math100Course) {
-        var burstCircles = courseNodes.selectAll(".burst-circle")
-          .data([1, 2, 3, 4]); // 4 additional circles
-        
-        burstCircles.enter()
-          .append("circle")
-          .attr("class", "burst-circle")
-          .attr("cx", xcoord(math100Course.x))
-          .attr("cy", ycoord(math100Course.y))
-          .attr("r", 0)
-          .attr("fill", "#ffba49")
-          .attr("stroke", "#333")
-          .attr("stroke-width", 1)
-          .transition()
-          .duration(300)
-          .attr("r", 14)
-          .attr("cx", function(d, i) {
-            // Position circles around the original: left, right, top, bottom
-            var positions = [
-              xcoord(math100Course.x) - 60, // left (increased spacing)
-              xcoord(math100Course.x) + 60, // right (increased spacing)
-              xcoord(math100Course.x) - 40, // top-left (increased spacing)
-              xcoord(math100Course.x) + 40  // top-right (increased spacing)
-            ];
-            return positions[i];
-          })
-          .attr("cy", function(d, i) {
-            var positions = [
-              ycoord(math100Course.y),      // left (same y)
-              ycoord(math100Course.y),      // right (same y)
-              ycoord(math100Course.y) - 45, // top-left (increased spacing)
-              ycoord(math100Course.y) - 45  // top-right (increased spacing)
-            ];
-            return positions[i];
-          });
-        
-        // Add text to burst circles
-        var burstText = courseNumbers.selectAll(".burst-text")
-          .data([1, 2, 3, 4]);
-        
-        burstText.enter()
-          .append("text")
-          .attr("class", "burst-text")
-          .attr("x", xcoord(math100Course.x))
-          .attr("y", ycoord(math100Course.y))
-          .attr("text-anchor", "middle")
-          .attr("dy", "2.5px")
-          .attr("font-family", "Arial")
-          .attr("font-size", 9)
-          .attr("fill", "black")
-          .attr("opacity", 0)
-          .text("TEST")
-          .transition()
-          .duration(300)
-          .attr("opacity", 1)
-          .attr("x", function(d, i) {
-            var positions = [
-              xcoord(math100Course.x) - 60, // left (increased spacing)
-              xcoord(math100Course.x) + 60, // right (increased spacing)
-              xcoord(math100Course.x) - 40, // top-left (increased spacing)
-              xcoord(math100Course.x) + 40  // top-right (increased spacing)
-            ];
-            return positions[i];
-          })
-          .attr("y", function(d, i) {
-            var positions = [
-              ycoord(math100Course.y),      // left (same y)
-              ycoord(math100Course.y),      // right (same y)
-              ycoord(math100Course.y) - 45, // top-left (increased spacing)
-              ycoord(math100Course.y) - 45  // top-right (increased spacing)
-            ];
-            return positions[i];
-          });
+    if (burstEffectsEnabled) {
+      for (let courseNum of coursesToHighlight) {
+        let courseEquivalencies = equivalencies.filter(eq => eq.course_number === courseNum);
+        if (courseEquivalencies.length > 0) {
+          let burstCourseData = data["courses_program" + data.programs[0].program_id].find(c => c.course_number == courseNum);
+          if (burstCourseData) {
+            allBurstData.push({
+              course: courseNum,
+              data: burstCourseData,
+              equivalencies: courseEquivalencies.map(eq => eq.equivalency_number)
+            });
+          }
+        }
       }
     }
+    
+    // Create burst effects for all courses that have equivalencies
+    allBurstData.forEach((burstInfo, courseIndex) => {
+      // Limit to first 4 equivalencies to match the original design
+      var equivalenciesToShow = burstInfo.equivalencies.slice(0, 4);
+      
+      var burstCircles = courseNodes.selectAll(`.burst-circle-${courseIndex}`)
+        .data(equivalenciesToShow);
+      
+      burstCircles.enter()
+          .append("circle")
+          .attr("class", `burst-circle burst-circle-${courseIndex}`)
+          .attr("cx", xcoord(burstInfo.data.x))
+          .attr("cy", ycoord(burstInfo.data.y))
+          .attr("r", 0)
+          .attr("fill", function(d) {
+            // Use the same color logic as the main course circles
+            var courseType = getCourseType(d);
+            return courseColors[courseType] ? courseColors[courseType].color : "#ffba49";
+          })
+          .attr("stroke", "none")
+          .transition()
+          .duration(300)
+        .attr("r", 16)
+        .attr("cx", function(d, i) {
+          // Position circles around the original: left, right, top, bottom
+          var positions = [
+            xcoord(burstInfo.data.x) - 60, // left (increased spacing)
+            xcoord(burstInfo.data.x) + 60, // right (increased spacing)
+            xcoord(burstInfo.data.x) - 40, // top-left (increased spacing)
+            xcoord(burstInfo.data.x) + 40  // top-right (increased spacing)
+          ];
+          return positions[i];
+        })
+        .attr("cy", function(d, i) {
+          var positions = [
+            ycoord(burstInfo.data.y),      // left (same y)
+            ycoord(burstInfo.data.y),      // right (same y)
+            ycoord(burstInfo.data.y) - 45, // top-left (increased spacing)
+            ycoord(burstInfo.data.y) - 45  // top-right (increased spacing)
+          ];
+          return positions[i];
+        });
+      
+      // Add text to burst circles showing the actual course numbers
+      var burstText = courseNumbers.selectAll(`.burst-text-${courseIndex}`)
+        .data(equivalenciesToShow);
+      
+      burstText.enter()
+        .append("text")
+        .attr("class", `burst-text burst-text-${courseIndex}`)
+        .attr("x", xcoord(burstInfo.data.x))
+        .attr("y", ycoord(burstInfo.data.y))
+        .attr("text-anchor", "middle")
+        .attr("dy", "2.5px")
+        .attr("font-family", "Arial")
+        .attr("font-size", 14)
+        .attr("fill", "black")
+        .attr("opacity", 0)
+        .text(d => getNumericPart(d))
+        .transition()
+        .duration(300)
+        .attr("opacity", 1)
+        .attr("x", function(d, i) {
+          var positions = [
+            xcoord(burstInfo.data.x) - 60, // left (increased spacing)
+            xcoord(burstInfo.data.x) + 60, // right (increased spacing)
+            xcoord(burstInfo.data.x) - 40, // top-left (increased spacing)
+            xcoord(burstInfo.data.x) + 40  // top-right (increased spacing)
+          ];
+          return positions[i];
+        })
+        .attr("y", function(d, i) {
+          var positions = [
+            ycoord(burstInfo.data.y),      // left (same y)
+            ycoord(burstInfo.data.y),      // right (same y)
+            ycoord(burstInfo.data.y) - 45, // top-left (increased spacing)
+            ycoord(burstInfo.data.y) - 45  // top-right (increased spacing)
+          ];
+          return positions[i];
+        });
+    });
   };
 
   function hideCourseInfo (event,course) {
@@ -565,8 +609,14 @@ d3.json("data/data.json").then(function(data) {
         .attr("opacity", linesVisible ? (requisite => requisite.requisite_is_primary == 1 ? 0.2 : 0) : 0);
     }
     
-    // Remove burst circles for MATH 100 (whether hovering on M100 or courses that have M100 in prereq chain)
-    var shouldRemoveBurst = course.course_number == 'M100' || (prereqChainEnabled && prerequisiteChain.includes('M100')) || (!prereqChainEnabled && directPrereqs.includes('M100'));
+    // Remove burst circles if any course in the chain has equivalencies
+    var shouldRemoveBurst = false;
+    for (let courseNum of allCoursesToHide) {
+      if (equivalencies.some(eq => eq.course_number === courseNum)) {
+        shouldRemoveBurst = true;
+        break;
+      }
+    }
     
     if (shouldRemoveBurst) {
       courseNodes.selectAll(".burst-circle")
