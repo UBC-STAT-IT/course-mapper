@@ -12,7 +12,7 @@ d3.json("data/data.json").then(function(data) {
     'S': { color: "#00a896", label: "STAT" },  
     // 'S': { color: "rgb(50, 159, 91)", label: "STAT" },
     'M': { color: "#e84855", label: "MATH" }, 
-    'D': { color: "#ffba49", label: "DSCI" }
+    'D': { color: "#FF7D00", label: "DSCI" }
   };
 
   var width = parseInt(d3.select("#course-map").style("width"));
@@ -29,7 +29,7 @@ d3.json("data/data.json").then(function(data) {
 
   // Add checkboxes for prerequisite lines and fill circle
   var linesVisible = true; // Default state - lines visible
-  var fillCircles = true; // Default state - circles filled with color
+  // Removed fillCircles logic
   var prereqChainEnabled = false; // Default state - prerequisite chain highlighting disabled
   var burstEffectsEnabled = true; // Default state - burst effects enabled
   
@@ -66,22 +66,6 @@ d3.json("data/data.json").then(function(data) {
     .style("color", "#333")
     .style("cursor", "pointer");
 
-  // Second checkbox row for fill circles
-  var fillRow = checkboxContainer.append("div")
-    .style("display", "flex")
-    .style("align-items", "center")
-    .style("gap", "6px")
-    .style("cursor", "pointer");
-
-  var fillCheckbox = fillRow.append("input")
-    .attr("type", "checkbox")
-    .attr("checked", fillCircles)
-    .style("cursor", "pointer");
-
-  fillRow.append("span")
-    .text("TESTING: fill circle")
-    .style("color", "#333")
-    .style("cursor", "pointer");
 
   // Third checkbox row for prerequisite chain
   var chainRow = checkboxContainer.append("div")
@@ -126,13 +110,7 @@ d3.json("data/data.json").then(function(data) {
     updateLineVisibility();
   });
 
-  fillRow.on("click", function(event) {
-    if (event.target.tagName !== 'INPUT') {
-      fillCheckbox.property("checked", !fillCheckbox.property("checked"));
-    }
-    fillCircles = fillCheckbox.property("checked");
-    updateCircleColors();
-  });
+  // Removed fillRow and fillCheckbox logic
 
   chainRow.on("click", function(event) {
     if (event.target.tagName !== 'INPUT') {
@@ -164,6 +142,10 @@ d3.json("data/data.json").then(function(data) {
       .attr("fill", function(d) {
         return getCourseColor(d.course_number, d.required, false);
       });
+    courseNumbers.selectAll("text")
+      .attr("fill", function(d) {
+        return d.required ? "white" : "black";
+      });
   }
 
   // Helper functions for course type detection and coloring
@@ -174,23 +156,20 @@ d3.json("data/data.json").then(function(data) {
   
   function getCourseColor(courseNumber, isRequired, isInList) {
     if (isRequired || isInList) {
-      return highlightColor1; // Keep highlight behavior for required courses
-    }
-    
-    if (fillCircles) {
+      // Fill required courses with their specific color
       var courseType = getCourseType(courseNumber);
-      return courseColors[courseType] ? courseColors[courseType].color : "white";
+      return courseColors[courseType] ? courseColors[courseType].color : highlightColor1;
     }
-    
-    return "white"; // Return white for fill when not filling
+    // By default, only show outline (fill is white)
+    return "white";
   }
   
   function getCourseStrokeColor(courseNumber, isRequired, isInList) {
-    if (isRequired || isInList) {
-      return highlightColor1; // Keep highlight behavior for required courses
-    }
-    
     var courseType = getCourseType(courseNumber);
+    if (isRequired || isInList) {
+      // Outline for required/filled courses is their specific color
+      return courseColors[courseType] ? courseColors[courseType].color : highlightColor1;
+    }
     return courseColors[courseType] ? courseColors[courseType].color : "black";
   }
   
@@ -437,11 +416,10 @@ d3.json("data/data.json").then(function(data) {
     }
     
     // Check for burst effect based on equivalencies data
-    // Find all courses in our highlighted set that have equivalencies defined
+    // Find all prerequisites (not including the hovered course) that have equivalencies defined
     var allBurstData = [];
-    
     if (burstEffectsEnabled) {
-      for (let courseNum of coursesToHighlight) {
+      for (let courseNum of prerequisiteCourses) { // Only prereqs, not hovered course
         let courseEquivalencies = equivalencies.filter(eq => eq.course_number === courseNum);
         if (courseEquivalencies.length > 0) {
           let burstCourseData = data["courses_program" + data.programs[0].program_id].find(c => c.course_number == courseNum);
@@ -463,46 +441,35 @@ d3.json("data/data.json").then(function(data) {
       
       var burstCircles = courseNodes.selectAll(`.burst-circle-${courseIndex}`)
         .data(equivalenciesToShow);
-      
+
       burstCircles.enter()
-          .append("circle")
-          .attr("class", `burst-circle burst-circle-${courseIndex}`)
-          .attr("cx", xcoord(burstInfo.data.x))
-          .attr("cy", ycoord(burstInfo.data.y))
-          .attr("r", 0)
-          .attr("fill", function(d) {
-            // Use the same color logic as the main course circles
-            var courseType = getCourseType(d);
-            return courseColors[courseType] ? courseColors[courseType].color : "#ffba49";
-          })
-          .attr("stroke", "none")
-          .transition()
-          .duration(300)
+        .append("circle")
+        .attr("class", `burst-circle burst-circle-${courseIndex}`)
+        .attr("cx", xcoord(burstInfo.data.x))
+        .attr("cy", ycoord(burstInfo.data.y))
+        .attr("r", 0)
+        .attr("fill", "white")
+        .attr("stroke", function(d) {
+          var courseType = getCourseType(d);
+          return courseColors[courseType] ? courseColors[courseType].color : "#ffba49";
+        })
+  .attr("stroke-width", 1.25)
+        .transition()
+        .duration(300)
         .attr("r", 16)
         .attr("cx", function(d, i) {
-          // Position circles around the original: left, right, top, bottom
-          var positions = [
-            xcoord(burstInfo.data.x) - 60, // left (increased spacing)
-            xcoord(burstInfo.data.x) + 60, // right (increased spacing)
-            xcoord(burstInfo.data.x) - 40, // top-left (increased spacing)
-            xcoord(burstInfo.data.x) + 40  // top-right (increased spacing)
-          ];
-          return positions[i];
+          // Lay out burst circles in a horizontal line to the right with reduced spacing
+          return xcoord(burstInfo.data.x) + 60 + i * 45;
         })
         .attr("cy", function(d, i) {
-          var positions = [
-            ycoord(burstInfo.data.y),      // left (same y)
-            ycoord(burstInfo.data.y),      // right (same y)
-            ycoord(burstInfo.data.y) - 45, // top-left (increased spacing)
-            ycoord(burstInfo.data.y) - 45  // top-right (increased spacing)
-          ];
-          return positions[i];
+          // All on the same y level as the main course
+          return ycoord(burstInfo.data.y);
         });
       
       // Add text to burst circles showing the actual course numbers
       var burstText = courseNumbers.selectAll(`.burst-text-${courseIndex}`)
         .data(equivalenciesToShow);
-      
+
       burstText.enter()
         .append("text")
         .attr("class", `burst-text burst-text-${courseIndex}`)
@@ -519,22 +486,12 @@ d3.json("data/data.json").then(function(data) {
         .duration(300)
         .attr("opacity", 1)
         .attr("x", function(d, i) {
-          var positions = [
-            xcoord(burstInfo.data.x) - 60, // left (increased spacing)
-            xcoord(burstInfo.data.x) + 60, // right (increased spacing)
-            xcoord(burstInfo.data.x) - 40, // top-left (increased spacing)
-            xcoord(burstInfo.data.x) + 40  // top-right (increased spacing)
-          ];
-          return positions[i];
+          // Lay out burst text in a horizontal line to the right with reduced spacing
+          return xcoord(burstInfo.data.x) + 60 + i * 45;
         })
         .attr("y", function(d, i) {
-          var positions = [
-            ycoord(burstInfo.data.y),      // left (same y)
-            ycoord(burstInfo.data.y),      // right (same y)
-            ycoord(burstInfo.data.y) - 45, // top-left (increased spacing)
-            ycoord(burstInfo.data.y) - 45  // top-right (increased spacing)
-          ];
-          return positions[i];
+          // All on the same y level as the main course
+          return ycoord(burstInfo.data.y);
         });
     });
   };
@@ -661,11 +618,13 @@ d3.json("data/data.json").then(function(data) {
           .delay(2*duration).duration(duration)
           .style("opacity",1)
           .attr("fill",course => getCourseColor(course.course_number, course.required, courseList.includes(course.course_number)))
-          .attr("stroke",course => getCourseStrokeColor(course.course_number, course.required, courseList.includes(course.course_number)));
+          .attr("stroke",course => getCourseStrokeColor(course.course_number, course.required, courseList.includes(course.course_number)))
+          .attr("stroke-width", 1.25);
       },function (update) {
         update
           .attr("fill",course => getCourseColor(course.course_number, course.required, courseList.includes(course.course_number)))
           .attr("stroke",course => getCourseStrokeColor(course.course_number, course.required, courseList.includes(course.course_number)))
+          .attr("stroke-width", 1.25)
           .transition()
           .delay(duration).duration(duration)
           .attr("cx",course => xcoord(course.x))
