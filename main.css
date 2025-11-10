@@ -103,70 +103,10 @@ h3, h4 {
 
 #course-map {
   grid-column: 2;
-  grid-row: 3;
-  border: 1px solid var(--light);
-  border-radius: 2px;
-  margin: 0px 10px 10px 0px;
-}
-
-#program-info {
-  grid-row: 2;
-  grid-column: 2;
-  overflow: auto;
-  display: grid;
-}
-
-#program-info-more {
   grid-row-start: 2;
   grid-row-end: 4;
-  grid-column: 2;
-  overflow: auto;
-  display: grid;
-  z-index: -1;
-}
-
-#program-info, #program-info-more {
-  margin: 10px 10px 10px 0px;
   border: 1px solid var(--light);
   border-radius: 2px;
-  grid-template-columns: 50% 50%;
-}
-
-#program-info1, #program-info1-more {
-  grid-row: 1;
-  grid-column: 1;
-  padding: 15px 15px 0px 15px;
-  overflow: auto;
-}
-
-#program-info2, #program-info2-more {
-  grid-row: 1;
-  grid-column: 2;
-  padding: 25px 15px 0px 15px;
-  overflow: auto;
-
-}
-
-img.reflection {
-  width: 15vh;
-  height: 15vh;
-  margin: auto;
-  display: block;
-  border-radius: 50%;
-}
-
-#show-more, #show-less {
-  grid-row: 2;
-  grid-column-start: 1;
-  grid-column-end: 3;
-  font-weight: bold;
-  border-top: 1px solid var(--light);
-  padding: 5px 0px;
-  align-self: end;
-  text-align: center;
-}
-
-#show-more:hover, #show-less:hover {
-  cursor: default;
-  background-color: var(--light);
+  margin: 10px 10px 10px 0px;
+  padding: 10px;
 }

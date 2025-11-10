@@ -29,7 +29,6 @@ d3.json("data/data.json").then(function(data) {
 
   // Add checkboxes for prerequisite lines and fill circle
   var linesVisible = true; // Default state - lines visible
-  // Removed fillCircles logic
   var prereqChainEnabled = false; // Default state - prerequisite chain highlighting disabled
   var burstEffectsEnabled = true; // Default state - burst effects enabled
   
@@ -109,8 +108,6 @@ d3.json("data/data.json").then(function(data) {
     linesVisible = linesCheckbox.property("checked");
     updateLineVisibility();
   });
-
-  // Removed fillRow and fillCheckbox logic
 
   chainRow.on("click", function(event) {
     if (event.target.tagName !== 'INPUT') {
@@ -254,40 +251,16 @@ d3.json("data/data.json").then(function(data) {
     .text(d => d.label);
 
   var courseMapDiv = d3.select("#course-map");
-  var programInfoDiv = d3.select("#program-info");
-  var programInfo1Div = d3.select("#program-info1");
-  var programInfo1Template = _.template(d3.select("#program-info1-template").html());
-  var programInfo2Div = d3.select("#program-info2");
-  var programInfo2Template = _.template(d3.select("#program-info2-template").html());
-  var programInfoMoreDiv = d3.select("#program-info-more");
-  var programInfo1MoreDiv = d3.select("#program-info1-more");
-  var programInfo1MoreTemplate = _.template(d3.select("#program-info1-more-template").html());
-  var programInfo2MoreDiv = d3.select("#program-info2-more");
-  var programInfo2MoreTemplate = _.template(d3.select("#program-info2-more-template").html());
+  // program-info-more and related divs removed
   var courseInfoDiv = d3.select("#course-info");
   var courseInfoTemplate = _.template(d3.select("#course-info-template").html());
-  
-  d3.select("#show-more").on("click",function (event) {
-    programInfoDiv.style("z-index","-1");
-    programInfoMoreDiv.style("z-index","1");
-  });
-
-  d3.select("#show-less").on("click",function (event) {
-    programInfoDiv.style("z-index","1");
-    programInfoMoreDiv.style("z-index","-1");
-  });
-
   var programNav = d3.select("#program-track-nav");
   programs.forEach(function(program){
     programNav.append("div").classed("program",true).html(program.name).on("click",function (event) {
       d3.select("#program-track-nav div.highlight").classed("highlight",false);
       d3.select(this).classed("highlight",true);
-      renderProgram(program,[],600);
-      programInfo1Div.html(programInfo1Template(program));
-      var reflection = _.sample(reflections.filter(reflection => reflection.program_id == program.program_id));
-      programInfo2Div.html(programInfo2Template(reflection));
-      programInfo1MoreDiv.html(programInfo1MoreTemplate(program));
-      programInfo2MoreDiv.html(programInfo2MoreTemplate(reflection));
+  renderProgram(program,[],600);
+  var reflection = _.sample(reflections.filter(reflection => reflection.program_id == program.program_id));
     });
     // tracks.filter(d => d.program_id == program.program_id).forEach(function(track){
     //   programNav.append("div").classed("track",true).html(track.name).on("click", function (event) {
@@ -726,10 +699,6 @@ d3.json("data/data.json").then(function(data) {
   };
 
   renderProgram(programs[0],[],0);
-  programInfo1Div.html(programInfo1Template(programs[0]));
   var reflection = _.sample(reflections.filter(reflection => reflection.program_id == 1));
-  programInfo2Div.html(programInfo2Template(reflection));
-  programInfo1MoreDiv.html(programInfo1MoreTemplate(programs[0]));
-  programInfo2MoreDiv.html(programInfo2MoreTemplate(reflection));  
   d3.select("#program-track-nav div:nth-child(1)").classed("highlight",true);
 });
