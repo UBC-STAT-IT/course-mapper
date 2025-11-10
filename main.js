@@ -278,6 +278,18 @@ d3.json("data/data.json").then(function(data) {
   });
 
   function showCourseInfo (event,course) {
+    // Interrupt and reset all transitions to ensure new highlight always appears
+    courseNodes.selectAll("circle")
+      .interrupt()
+      .attr("r", 12)
+      .style("opacity", 1);
+    courseNumbers.selectAll("text")
+      .interrupt()
+      .attr("font-size", 11)
+      .style("opacity", 1);
+    infoNodes.selectAll("circle")
+      .interrupt()
+      .attr("r", 12);
     var courseInfo = courses.find(d => d.course_number == course.course_number);
     var requisiteInfo = requisites.filter(r => r.course_number == course.course_number);
     
@@ -549,18 +561,9 @@ d3.json("data/data.json").then(function(data) {
     }
     
     if (shouldRemoveBurst) {
-      courseNodes.selectAll(".burst-circle")
-        .transition()
-        .duration(200)
-        .attr("r", 0)
-        .attr("opacity", 0)
-        .remove();
-      
-      courseNumbers.selectAll(".burst-text")
-        .transition()
-        .duration(200)
-        .attr("opacity", 0)
-        .remove();
+      // Remove burst circles and text immediately to prevent lingering
+      courseNodes.selectAll(".burst-circle").remove();
+      courseNumbers.selectAll(".burst-text").remove();
     }
   };
 
