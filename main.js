@@ -7,6 +7,15 @@ d3.json("data/data.json").then(function(data) {
   const reflections = data.reflections;
   const equivalencies = data.equivalencies;
 
+  // Load hierarchical layout data
+  let hierarchicalData = null;
+  d3.json("data/data_hierarchical.json").then(function(hierData) {
+    hierarchicalData = hierData;
+    console.log("Hierarchical layout loaded:", hierData.layout_metadata);
+  }).catch(function(error) {
+    console.log("Hierarchical layout not available:", error);
+  });
+
   // Color configuration - change colors here to update both nodes and legend
   var courseColors = {
     'S': { color: "#00a896", label: "STAT" },  
@@ -17,12 +26,52 @@ d3.json("data/data.json").then(function(data) {
 
   var width = parseInt(d3.select("#course-map").style("width"));
   var height = parseInt(d3.select("#course-map").style("height")) - 20;
-  var xscale = width/30;
-  var yscale = height/18;
+  
+  // Function to calculate scaling based on data coordinate ranges
+  function calculateScaling(dataSource) {
+    if (!dataSource || !dataSource.courses_program1) {
+      // Fallback for original data
+      return {
+        xscale: width / 10,
+        yscale: height / 8
+      };
+    }
+    
+    const courses = dataSource.courses_program1;
+    if (courses.length === 0) return { xscale: width / 10, yscale: height / 8 };
+    
+    // Find the actual coordinate ranges in the data
+    const xCoords = courses.map(c => c.x);
+    const yCoords = courses.map(c => c.y);
+    const minX = Math.min(...xCoords);
+    const maxX = Math.max(...xCoords);
+    const minY = Math.min(...yCoords);
+    const maxY = Math.max(...yCoords);
+    
+    // Calculate ranges
+    const xRange = maxX - minX;
+    const yRange = maxY - minY;
+    
+    // Add some padding (20% on each side)
+    const padding = 0.2;
+    const usableWidth = width * (1 - padding);
+    const usableHeight = height * (1 - padding);
+    
+    // Calculate scale to fit the data with padding
+    return {
+      xscale: xRange > 0 ? usableWidth / xRange : width / 10,
+      yscale: yRange > 0 ? usableHeight / yRange : height / 8
+    };
+  }
+  
+  // Initial scaling for original data
+  var scales = calculateScaling(data);
+  var xscale = scales.xscale;
+  var yscale = scales.yscale;
   
   // Coordinate transformation functions (zoom transform applied to container)
-  var xcoord = x => x * xscale + width / 2;
-  var ycoord = y => height - y * yscale - 1.5*yscale;
+  function xcoord(x) { return x * xscale + width / 2; }
+  function ycoord(y) { return height - y * yscale; }
   
   var svg = d3.select("#course-map svg").attr("width",width).attr("height",height);
   var highlightColor1 = "rgb(0, 85, 183)";
@@ -31,13 +80,14 @@ d3.json("data/data.json").then(function(data) {
   var linesVisible = true; // Default state - lines visible
   var prereqChainEnabled = false; // Default state - prerequisite chain highlighting disabled
   var burstEffectsEnabled = true; // Default state - burst effects enabled
+  var hierarchicalLayout = false; // Default state - use original layout
   
   // Create checkbox container in top right of SVG canvas
   var checkboxContainer = svg.append("foreignObject")
     .attr("x", width - 180)
     .attr("y", 10)
     .attr("width", 170)
-    .attr("height", 115)
+    .attr("height", 140)
     .append("xhtml:div")
     .style("background", "rgba(255, 255, 255, 0.9)")
     .style("padding", "6px 10px")
@@ -100,6 +150,23 @@ d3.json("data/data.json").then(function(data) {
     .style("color", "#333")
     .style("cursor", "pointer");
 
+  // Fifth checkbox row for hierarchical layout
+  var hierarchicalRow = checkboxContainer.append("div")
+    .style("display", "flex")
+    .style("align-items", "center")
+    .style("gap", "6px")
+    .style("cursor", "pointer");
+
+  var hierarchicalCheckbox = hierarchicalRow.append("input")
+    .attr("type", "checkbox")
+    .property("checked", hierarchicalLayout)
+    .style("cursor", "pointer");
+
+  hierarchicalRow.append("span")
+    .text("TESTING: hierarchical")
+    .style("color", "#333")
+    .style("cursor", "pointer");
+
   // Add click handlers for checkboxes
   linesRow.on("click", function(event) {
     if (event.target.tagName !== 'INPUT') {
@@ -121,6 +188,38 @@ d3.json("data/data.json").then(function(data) {
       burstCheckbox.property("checked", !burstCheckbox.property("checked"));
     }
     burstEffectsEnabled = burstCheckbox.property("checked");
+  });
+
+  hierarchicalRow.on("click", function(event) {
+    if (event.target.tagName !== 'INPUT') {
+      hierarchicalCheckbox.property("checked", !hierarchicalCheckbox.property("checked"));
+    }
+    hierarchicalLayout = hierarchicalCheckbox.property("checked");
+    
+    // Switch to hierarchical layout if available
+    if (hierarchicalLayout && hierarchicalData) {
+      console.log("Switching to hierarchical layout");
+      // Recalculate scaling for hierarchical data
+      var newScales = calculateScaling(hierarchicalData);
+      xscale = newScales.xscale;
+      yscale = newScales.yscale;
+      renderProgram(programs[0], [], 600, hierarchicalData);
+      // Fit the map to view after layout switch
+      setTimeout(() => {
+        fitMapToView();
+      }, 700); // Wait for transition to complete
+    } else {
+      console.log("Switching to original layout");
+      // Recalculate scaling for original data
+      var newScales = calculateScaling(data);
+      xscale = newScales.xscale;
+      yscale = newScales.yscale;
+      renderProgram(programs[0], [], 600, data);
+      // Fit the map to view after layout switch
+      setTimeout(() => {
+        fitMapToView();
+      }, 700); // Wait for transition to complete
+    }
   });
 
   function updateLineVisibility() {
@@ -174,6 +273,11 @@ d3.json("data/data.json").then(function(data) {
     return courseNumber.toString().substring(1);
   }
 
+  // Helper function to get current data source
+  function getCurrentDataSource() {
+    return hierarchicalLayout && hierarchicalData ? hierarchicalData : data;
+  }
+
   // Create zoom container group
   var zoomContainer = svg.append("g").attr("class", "zoom-container");
   
@@ -203,6 +307,52 @@ d3.json("data/data.json").then(function(data) {
   // Apply zoom behavior to SVG and set default cursor
   svg.call(zoom)
     .style("cursor", "default");
+
+  // Function to fit the entire map in the viewport
+  function fitMapToView() {
+    // Get all course nodes to calculate bounds
+    const nodes = svg.selectAll(".zoom-container circle").nodes();
+    if (nodes.length === 0) return;
+
+    // Calculate bounding box of all nodes
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    
+    nodes.forEach(node => {
+      const cx = parseFloat(node.getAttribute('cx'));
+      const cy = parseFloat(node.getAttribute('cy'));
+      if (!isNaN(cx) && !isNaN(cy)) {
+        minX = Math.min(minX, cx);
+        maxX = Math.max(maxX, cx);
+        minY = Math.min(minY, cy);
+        maxY = Math.max(maxY, cy);
+      }
+    });
+
+    if (minX === Infinity) return;
+
+    // Add padding
+    const padding = 50;
+    const contentWidth = maxX - minX + padding * 2;
+    const contentHeight = maxY - minY + padding * 2;
+
+    // Calculate scale to fit content in viewport
+    const scaleX = width / contentWidth;
+    const scaleY = height / contentHeight;
+    const scale = Math.min(scaleX, scaleY, 1); // Don't zoom in beyond 100%
+
+    // Calculate translation to center the content
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    const translateX = width / 2 - centerX * scale;
+    const translateY = height / 2 - centerY * scale;
+
+    // Apply the transform
+    const transform = d3.zoomIdentity
+      .translate(translateX, translateY)
+      .scale(scale);
+
+    svg.call(zoom.transform, transform);
+  }
 
   // Create legend (not affected by zoom)
   var legend = svg.append("g")
@@ -318,7 +468,8 @@ d3.json("data/data.json").then(function(data) {
     courseInfoDiv.html(courseInfoTemplate(courseInfoObject));
     
     // Get direct prerequisites for this course
-    var directPrereqs = data["requisites_program" + data.programs[0].program_id]
+    var currentDataSource = getCurrentDataSource();
+    var directPrereqs = currentDataSource["requisites_program" + currentDataSource.programs[0].program_id]
       .filter(requisite => requisite.course_number == course.course_number)
       .map(requisite => requisite.requisite_number);
     
@@ -329,7 +480,7 @@ d3.json("data/data.json").then(function(data) {
       }
       visited.add(courseNumber);
       
-      var directPrereqs = data["requisites_program" + data.programs[0].program_id]
+      var directPrereqs = currentDataSource["requisites_program" + currentDataSource.programs[0].program_id]
         .filter(requisite => requisite.course_number == courseNumber)
         .map(requisite => requisite.requisite_number);
       
@@ -407,7 +558,7 @@ d3.json("data/data.json").then(function(data) {
       for (let courseNum of prerequisiteCourses) { // Only prereqs, not hovered course
         let courseEquivalencies = equivalencies.filter(eq => eq.course_number === courseNum);
         if (courseEquivalencies.length > 0) {
-          let burstCourseData = data["courses_program" + data.programs[0].program_id].find(c => c.course_number == courseNum);
+          let burstCourseData = currentDataSource["courses_program" + currentDataSource.programs[0].program_id].find(c => c.course_number == courseNum);
           if (burstCourseData) {
             allBurstData.push({
               course: courseNum,
@@ -507,7 +658,8 @@ d3.json("data/data.json").then(function(data) {
     
     // Hide the prerequisite lines when hover ends
     // Get direct prerequisites for this course
-    var directPrereqs = data["requisites_program" + data.programs[0].program_id]
+    var currentDataSource = getCurrentDataSource();
+    var directPrereqs = currentDataSource["requisites_program" + currentDataSource.programs[0].program_id]
       .filter(requisite => requisite.course_number == course.course_number)
       .map(requisite => requisite.requisite_number);
     
@@ -517,7 +669,7 @@ d3.json("data/data.json").then(function(data) {
       }
       visited.add(courseNumber);
       
-      var directPrereqs = data["requisites_program" + data.programs[0].program_id]
+      var directPrereqs = currentDataSource["requisites_program" + currentDataSource.programs[0].program_id]
         .filter(requisite => requisite.course_number == courseNumber)
         .map(requisite => requisite.requisite_number);
       
@@ -567,7 +719,10 @@ d3.json("data/data.json").then(function(data) {
     }
   };
 
-  function renderProgram (program,courseList,duration) {
+  function renderProgram (program,courseList,duration,dataSource) {
+    // Use provided data source or fall back to original data
+    var currentData = dataSource || data;
+    
     var course0 = {"number": "",
                    "title": "Course Information",
                    "description": "The course map presents all STAT, MATH, and DSCI courses along with prerequisite/corequisite connections. Hover over a course to view the course description, a complete list of prerequisites/corequisites, credit exclusions and notes. Select programs and streams in the menu above.<br><br>The course map was created by <a href='https://patrickwalls.github.io/'>Patrick Walls</a> with contributions from <a href='https://github.com/zzzzzyzzzzz'>Karen Zhou</a> and <a href='https://github.com/LeoLee5566'>Wuyang Li</a>.<br><br><a rel='license' href='http://creativecommons.org/licenses/by-nc-sa/4.0/'><img alt='Creative Commons Licence' style='border-width:0' src='https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png' /></a><br />This work is licensed under a <a rel='license' href='http://creativecommons.org/licenses/by-nc-sa/4.0/'>Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.",
@@ -576,8 +731,8 @@ d3.json("data/data.json").then(function(data) {
                    "notes": ""};
     courseInfoDiv.html(courseInfoTemplate(course0));
 
-    var updateCoursesProgram = data["courses_program" + program.program_id];
-    var updateRequisitesProgram = data["requisites_program" + program.program_id];
+    var updateCoursesProgram = currentData["courses_program" + program.program_id];
+    var updateRequisitesProgram = currentData["requisites_program" + program.program_id];
 
     courseNodes
       .selectAll("circle")
@@ -704,4 +859,52 @@ d3.json("data/data.json").then(function(data) {
   renderProgram(programs[0],[],0);
   var reflection = _.sample(reflections.filter(reflection => reflection.program_id == 1));
   d3.select("#program-track-nav div:nth-child(1)").classed("highlight",true);
+  
+  // Fit the map to view after initial render
+  setTimeout(() => {
+    fitMapToView();
+  }, 100); // Small delay to ensure rendering is complete
+  
+  // Add resize listener for responsive scaling
+  var resizeTimeout;
+  window.addEventListener('resize', function() {
+    // Debounce resize events
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(function() {
+      // Recalculate dimensions
+      var newWidth = parseInt(d3.select("#course-map").style("width"));
+      var newHeight = parseInt(d3.select("#course-map").style("height")) - 20;
+      
+      // Only update if dimensions actually changed significantly
+      if (Math.abs(newWidth - width) > 50 || Math.abs(newHeight - height) > 50) {
+        // Update dimensions and recalculate scaling based on current data
+        width = newWidth;
+        height = newHeight;
+        
+        // Recalculate scaling for current data source
+        var currentDataSource = hierarchicalLayout && hierarchicalData ? hierarchicalData : data;
+        var newScales = calculateScaling(currentDataSource);
+        xscale = newScales.xscale;
+        yscale = newScales.yscale;
+        
+        // Update SVG dimensions
+        svg.attr("width", width).attr("height", height);
+        
+        // Update legend position
+        legend.attr("transform", `translate(${width - 150}, ${height - 80})`);
+        
+        // Update checkbox container position
+        checkboxContainer.attr("x", width - 180);
+        
+        // Re-render with new coordinates
+        var currentDataSource = hierarchicalLayout && hierarchicalData ? hierarchicalData : data;
+        renderProgram(programs[0], [], 300, currentDataSource); // Shorter transition for resize
+        
+        // Fit the map to the new viewport size
+        setTimeout(() => {
+          fitMapToView();
+        }, 350); // Wait for transition to complete
+      }
+    }, 150); // 150ms debounce
+  });
 });
