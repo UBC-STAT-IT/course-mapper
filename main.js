@@ -355,50 +355,89 @@ d3.json("data/data.json").then(function(data) {
   }
 
   // Create legend (not affected by zoom)
-  var legend = svg.append("g")
-    .attr("class", "legend")
-    .attr("transform", `translate(${width - 150}, ${height - 80})`);
-
+  // Move legend up to stay within bounds after resizing
   // Generate legend data from courseColors configuration
   var legendData = Object.keys(courseColors).map(key => courseColors[key]);
+  var legendBoxHeight = 70 + 22; // keep in sync with legend rect
+  // Calculate legend width to keep it in bounds
+  var legendBoxWidth = 120 + legendData.length * 22;
+  var legend = svg.append("g")
+    .attr("class", "legend")
+    .attr("transform", `translate(${width - legendBoxWidth - 30}, ${Math.max(20, height - legendBoxHeight - 30)})`);
 
   // Legend background
+  // Calculate legend box height to fit all items
+  var legendBoxHeight = 70 + 22; // 70 for original, 22 for required row spacing
   legend.append("rect")
     .attr("x", -10)
     .attr("y", -10)
-    .attr("width", 120)
-    .attr("height", 70)
+    .attr("width", 120 + legendData.length * 22) // widen for required row
+    .attr("height", legendBoxHeight)
     .attr("fill", "white")
     .attr("stroke", "#ccc")
     .attr("stroke-width", 1)
     .attr("rx", 5);
 
   // Legend items
+  var legendRowX = (100 + legendData.length * 22) / 2 - 48;
   var legendItems = legend.selectAll(".legend-item")
     .data(legendData)
     .enter()
     .append("g")
     .attr("class", "legend-item")
-    .attr("transform", (d, i) => `translate(0, ${i * 20})`);
+    .attr("transform", (d, i) => `translate(${legendRowX - 8}, ${i * 20})`);
 
-  // Legend circles
+  // Legend circles (outline only)
+
+  // Legend text for course types
   legendItems.append("circle")
-    .attr("cx", 8)
+    .attr("cx", 0)
     .attr("cy", 8)
     .attr("r", 6)
-    .attr("fill", d => d.color)
-    .attr("stroke", "#333")
-    .attr("stroke-width", 1);
+    .attr("fill", "white")
+    .attr("stroke", d => d.color)
+    .attr("stroke-width", 1.25);
 
-  // Legend text
+  const legendLabelX = 44;
   legendItems.append("text")
-    .attr("x", 20)
+    .attr("x", legendLabelX)
     .attr("y", 8)
     .attr("dy", "0.35em")
     .attr("font-family", "Arial")
     .attr("font-size", "12px")
     .attr("fill", "#333")
+    .attr("text-anchor", "start")
     .text(d => d.label);
+
+  // Add legend row for required courses (filled circles)
+  // Use the same legendBoxWidth as the main legend and match spacing
+  var requiredLegend = legend.append("g")
+    .attr("class", "legend-required")
+    .attr("transform", `translate(${legendRowX - 8}, ${legendData.length * 20})`);
+
+  // Add filled circles for each course type color
+  requiredLegend.selectAll(".legend-required-circle")
+    .data(legendData)
+    .enter()
+    .append("circle")
+    .attr("class", "legend-required-circle")
+    .attr("cx", (d, i) => (i - (legendData.length - 1) / 2) * 22)
+    .attr("cy", 8)
+    .attr("r", 6)
+    .attr("fill", d => d.color)
+    .attr("stroke", d => d.color)
+    .attr("stroke-width", 1.25);
+
+  // Add label for required courses
+  requiredLegend.append("text")
+    .attr("x", legendLabelX)
+    .attr("y", 8)
+    .attr("dy", "0.35em")
+    .attr("font-family", "Arial")
+    .attr("font-size", "12px")
+    .attr("fill", "#333")
+    .attr("text-anchor", "start")
+    .text("Required Course");
 
   var courseMapDiv = d3.select("#course-map");
   // program-info-more and related divs removed
@@ -711,12 +750,19 @@ d3.json("data/data.json").then(function(data) {
         break;
       }
     }
-    
     if (shouldRemoveBurst) {
-      // Remove burst circles and text immediately to prevent lingering
       courseNodes.selectAll(".burst-circle").remove();
       courseNumbers.selectAll(".burst-text").remove();
     }
+
+    // Reset course info panel to default
+    var course0 = {"number": "",
+                   "title": "Course Information",
+                   "description": "The course map presents all STAT, MATH, and DSCI courses along with prerequisite/corequisite connections. Hover over a course to view the course description, a complete list of prerequisites/corequisites, credit exclusions and notes. Select programs and streams in the menu above.<br><br>The course map was created by <a href='https://patrickwalls.github.io/'>Patrick Walls</a> with contributions from <a href='https://github.com/zzzzzyzzzzz'>Karen Zhou</a> and <a href='https://github.com/LeoLee5566'>Wuyang Li</a>.<br><br><a rel='license' href='http://creativecommons.org/licenses/by-nc-sa/4.0/'><img alt='Creative Commons Licence' style='border-width:0' src='https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png' /></a><br />This work is licensed under a <a rel='license' href='http://creativecommons.org/licenses/by-nc-sa/4.0/'>Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.",
+                   "prereqs": [],
+                   "coreqs": [], 
+                   "notes": ""};
+    courseInfoDiv.html(courseInfoTemplate(course0));
   };
 
   function renderProgram (program,courseList,duration,dataSource) {

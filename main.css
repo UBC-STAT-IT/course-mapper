@@ -99,6 +99,7 @@ h3, h4 {
   overflow: auto;
   border: 1px solid var(--light);
   border-radius: 2px;
+  opacity: 1;
 }
 
 #course-map {
