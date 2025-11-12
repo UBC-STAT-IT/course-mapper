@@ -354,90 +354,315 @@ d3.json("data/data.json").then(function(data) {
     svg.call(zoom.transform, transform);
   }
 
-  // Create legend (not affected by zoom)
-  // Move legend up to stay within bounds after resizing
-  // Generate legend data from courseColors configuration
-  var legendData = Object.keys(courseColors).map(key => courseColors[key]);
-  var legendBoxHeight = 70 + 22; // keep in sync with legend rect
-  // Calculate legend width to keep it in bounds
-  var legendBoxWidth = 120 + legendData.length * 22;
-  var legend = svg.append("g")
-    .attr("class", "legend")
-    .attr("transform", `translate(${width - legendBoxWidth - 30}, ${Math.max(20, height - legendBoxHeight - 30)})`);
-
-  // Legend background
-  // Calculate legend box height to fit all items
-  var legendBoxHeight = 70 + 22; // 70 for original, 22 for required row spacing
-  legend.append("rect")
-    .attr("x", -10)
-    .attr("y", -10)
-    .attr("width", 120 + legendData.length * 22) // widen for required row
-    .attr("height", legendBoxHeight)
-    .attr("fill", "white")
-    .attr("stroke", "#ccc")
-    .attr("stroke-width", 1)
-    .attr("rx", 5);
-
-  // Legend items
-  var legendRowX = (100 + legendData.length * 22) / 2 - 48;
-  var legendItems = legend.selectAll(".legend-item")
-    .data(legendData)
-    .enter()
-    .append("g")
-    .attr("class", "legend-item")
-    .attr("transform", (d, i) => `translate(${legendRowX - 8}, ${i * 20})`);
-
-  // Legend circles (outline only)
-
-  // Legend text for course types
-  legendItems.append("circle")
-    .attr("cx", 0)
-    .attr("cy", 8)
-    .attr("r", 6)
-    .attr("fill", "white")
-    .attr("stroke", d => d.color)
-    .attr("stroke-width", 1.25);
-
-  const legendLabelX = 44;
-  legendItems.append("text")
-    .attr("x", legendLabelX)
-    .attr("y", 8)
-    .attr("dy", "0.35em")
-    .attr("font-family", "Arial")
-    .attr("font-size", "12px")
-    .attr("fill", "#333")
-    .attr("text-anchor", "start")
-    .text(d => d.label);
-
-  // Add legend row for required courses (filled circles)
-  // Use the same legendBoxWidth as the main legend and match spacing
-  var requiredLegend = legend.append("g")
-    .attr("class", "legend-required")
-    .attr("transform", `translate(${legendRowX - 8}, ${legendData.length * 20})`);
-
-  // Add filled circles for each course type color
-  requiredLegend.selectAll(".legend-required-circle")
-    .data(legendData)
-    .enter()
-    .append("circle")
-    .attr("class", "legend-required-circle")
-    .attr("cx", (d, i) => (i - (legendData.length - 1) / 2) * 22)
-    .attr("cy", 8)
-    .attr("r", 6)
-    .attr("fill", d => d.color)
-    .attr("stroke", d => d.color)
-    .attr("stroke-width", 1.25);
-
-  // Add label for required courses
-  requiredLegend.append("text")
-    .attr("x", legendLabelX)
-    .attr("y", 8)
-    .attr("dy", "0.35em")
-    .attr("font-family", "Arial")
-    .attr("font-size", "12px")
-    .attr("fill", "#333")
-    .attr("text-anchor", "start")
-    .text("Required Course");
+  // ============================================================================
+  // LEGEND CONFIGURATION AND CREATION
+  // ============================================================================
+  
+  /**
+   * Get responsive legend configuration based on viewport size
+   * Scales the legend appropriately for different screen sizes
+   */
+  function getResponsiveLegendConfig(viewportWidth, viewportHeight) {
+    // Define breakpoints
+    const isSmall = viewportWidth < 1000;
+    const isMedium = viewportWidth >= 1000 && viewportWidth < 1400;
+    const isLarge = viewportWidth >= 1400;
+    
+    // Base configuration that scales with viewport
+    const baseConfig = {
+      // Spacing & Sizing (scales with viewport)
+      padding: isSmall ? 
+        { top: 10, right: 10, bottom: 10, left: 10 } : 
+        isMedium ? 
+        { top: 15, right: 15, bottom: 15, left: 15 } :
+        { top: 18, right: 18, bottom: 18, left: 18 },
+      
+      margin: { 
+        fromEdge: isSmall ? 10 : isMedium ? 15 : 20 
+      },
+      
+      rowHeight: isSmall ? 18 : isMedium ? 22 : 24,
+      rowSpacing: 0,
+      
+      // Icon properties (scale with viewport)
+      circle: { 
+        radius: isSmall ? 5 : isMedium ? 6 : 7, 
+        strokeWidth: 1.25 
+      },
+      line: { 
+        length: isSmall ? 35 : isMedium ? 42 : 50, 
+        strokeWidth: isSmall ? 1.5 : 2, 
+        y: isSmall ? 7 : isMedium ? 9 : 10 
+      },
+      
+      // Positioning within each row (scales with viewport)
+      icon: { 
+        x: isSmall ? 25 : isMedium ? 30 : 35, 
+        y: isSmall ? 7 : isMedium ? 9 : 10 
+      },
+      label: { 
+        x: isSmall ? 60 : isMedium ? 75 : 90, 
+        y: isSmall ? 7 : isMedium ? 9 : 10, 
+        dy: "0.35em" 
+      },
+      
+      // Styling (font size scales with viewport)
+      background: { 
+        fill: "white", 
+        stroke: "#ccc", 
+        strokeWidth: 1, 
+        borderRadius: 5 
+      },
+      text: { 
+        fontFamily: "Arial", 
+        fontSize: isSmall ? "11px" : isMedium ? "13px" : "14px", 
+        fill: "#333",
+        anchor: "start"
+      },
+      
+      // Content width scales with viewport - increased to fit all text
+      contentWidth: isSmall ? 210 : isMedium ? 245 : 280,
+      
+      // Position anchor point
+      anchor: "bottom-right"
+    };
+    
+    return baseConfig;
+  }
+  
+  // Get initial responsive config
+  var LEGEND_CONFIG = getResponsiveLegendConfig(width, height);
+  
+  // Define legend items as data
+  const legendData = Object.keys(courseColors).map(key => courseColors[key]);
+  const legendItemsData = [
+    ...legendData.map((courseType, index) => ({
+      type: 'course-type',
+      color: courseType.color,
+      label: courseType.label,
+      index: index
+    })),
+    {
+      type: 'required',
+      colors: legendData.map(d => d.color),
+      label: 'Required Course'
+    },
+    {
+      type: 'line-solid',
+      label: 'Recommended Prerequisite'
+    },
+    {
+      type: 'line-dashed',
+      label: 'Alternative Prerequisite'
+    }
+  ];
+  
+  /**
+   * Calculate legend dimensions based on content
+   */
+  function calculateLegendDimensions(config, itemsData) {
+    const numRows = itemsData.length;
+    const contentHeight = numRows * (config.rowHeight + config.rowSpacing);
+    const contentWidth = config.contentWidth; // Use responsive width from config
+    
+    const totalWidth = contentWidth + config.padding.left + config.padding.right;
+    const totalHeight = contentHeight + config.padding.top + config.padding.bottom;
+    
+    return {
+      width: totalWidth,
+      height: totalHeight,
+      contentWidth: contentWidth,
+      contentHeight: contentHeight
+    };
+  }
+  
+  /**
+   * Calculate legend position based on anchor point and SVG dimensions
+   */
+  function calculateLegendPosition(config, dimensions, svgWidth, svgHeight) {
+    const { width: legendWidth, height: legendHeight } = dimensions;
+    const margin = config.margin.fromEdge;
+    
+    let x, y;
+    
+    switch(config.anchor) {
+      case "top-left":
+        x = margin;
+        y = margin;
+        break;
+      case "top-right":
+        x = svgWidth - legendWidth - margin;
+        y = margin;
+        break;
+      case "bottom-left":
+        x = margin;
+        y = svgHeight - legendHeight - margin;
+        break;
+      case "bottom-right":
+        x = svgWidth - legendWidth - margin;
+        y = svgHeight - legendHeight - margin;
+        break;
+      default:
+        x = margin;
+        y = svgHeight - legendHeight - margin;
+    }
+    
+    return { x, y };
+  }
+  
+  /**
+   * Create or update the legend
+   */
+  function createLegend(svg, config, itemsData, svgWidth, svgHeight) {
+    // Calculate dimensions and position
+    const dimensions = calculateLegendDimensions(config, itemsData);
+    const position = calculateLegendPosition(config, dimensions, svgWidth, svgHeight);
+    
+    // Remove existing legend if it exists
+    svg.select(".legend").remove();
+    
+    // Create legend group
+    const legend = svg.append("g")
+      .attr("class", "legend")
+      .attr("transform", `translate(${position.x}, ${position.y})`);
+    
+    // Add background
+    legend.append("rect")
+      .attr("x", 0)
+      .attr("y", 0)
+      .attr("width", dimensions.width)
+      .attr("height", dimensions.height)
+      .attr("fill", config.background.fill)
+      .attr("stroke", config.background.stroke)
+      .attr("stroke-width", config.background.strokeWidth)
+      .attr("rx", config.background.borderRadius);
+    
+    // Create groups for each legend item
+    const itemGroups = legend.selectAll(".legend-item")
+      .data(itemsData)
+      .enter()
+      .append("g")
+      .attr("class", "legend-item")
+      .attr("transform", (d, i) => {
+        const y = config.padding.top + i * (config.rowHeight + config.rowSpacing);
+        return `translate(${config.padding.left}, ${y})`;
+      });
+    
+    // Render items based on type
+    itemGroups.each(function(d, i) {
+      const group = d3.select(this);
+      
+      if (d.type === 'course-type') {
+        // Outline circle for course types
+        group.append("circle")
+          .attr("cx", config.icon.x)
+          .attr("cy", config.icon.y)
+          .attr("r", config.circle.radius)
+          .attr("fill", "white")
+          .attr("stroke", d.color)
+          .attr("stroke-width", config.circle.strokeWidth);
+        
+        group.append("text")
+          .attr("x", config.label.x)
+          .attr("y", config.label.y)
+          .attr("dy", config.label.dy)
+          .attr("font-family", config.text.fontFamily)
+          .attr("font-size", config.text.fontSize)
+          .attr("fill", config.text.fill)
+          .attr("text-anchor", config.text.anchor)
+          .text(d.label);
+          
+      } else if (d.type === 'required') {
+        // Multiple filled circles for required courses
+        const numCircles = d.colors.length;
+        const circleSpacing = 22;
+        const startX = config.icon.x - ((numCircles - 1) * circleSpacing) / 2;
+        
+        d.colors.forEach((color, idx) => {
+          group.append("circle")
+            .attr("cx", startX + idx * circleSpacing)
+            .attr("cy", config.icon.y)
+            .attr("r", config.circle.radius)
+            .attr("fill", color)
+            .attr("stroke", color)
+            .attr("stroke-width", config.circle.strokeWidth);
+        });
+        
+        group.append("text")
+          .attr("x", config.label.x)
+          .attr("y", config.label.y)
+          .attr("dy", config.label.dy)
+          .attr("font-family", config.text.fontFamily)
+          .attr("font-size", config.text.fontSize)
+          .attr("fill", config.text.fill)
+          .attr("text-anchor", config.text.anchor)
+          .text(d.label);
+          
+      } else if (d.type === 'line-solid') {
+        // Solid line for recommended prerequisites
+        const lineStartX = config.icon.x - config.line.length / 2;
+        const lineEndX = config.icon.x + config.line.length / 2;
+        
+        group.append("line")
+          .attr("x1", lineStartX)
+          .attr("y1", config.line.y)
+          .attr("x2", lineEndX)
+          .attr("y2", config.line.y)
+          .attr("stroke", "#333")
+          .attr("stroke-width", config.line.strokeWidth);
+        
+        group.append("text")
+          .attr("x", config.label.x)
+          .attr("y", config.label.y)
+          .attr("dy", config.label.dy)
+          .attr("font-family", config.text.fontFamily)
+          .attr("font-size", config.text.fontSize)
+          .attr("fill", config.text.fill)
+          .attr("text-anchor", config.text.anchor)
+          .text(d.label);
+          
+      } else if (d.type === 'line-dashed') {
+        // Dashed line for alternative prerequisites
+        const lineStartX = config.icon.x - config.line.length / 2;
+        const lineEndX = config.icon.x + config.line.length / 2;
+        
+        group.append("line")
+          .attr("x1", lineStartX)
+          .attr("y1", config.line.y)
+          .attr("x2", lineEndX)
+          .attr("y2", config.line.y)
+          .attr("stroke", "#333")
+          .attr("stroke-width", config.line.strokeWidth)
+          .attr("stroke-dasharray", "6,4");
+        
+        group.append("text")
+          .attr("x", config.label.x)
+          .attr("y", config.label.y)
+          .attr("dy", config.label.dy)
+          .attr("font-family", config.text.fontFamily)
+          .attr("font-size", config.text.fontSize)
+          .attr("fill", config.text.fill)
+          .attr("text-anchor", config.text.anchor)
+          .text(d.label);
+      }
+    });
+    
+    return { element: legend, dimensions, position };
+  }
+  
+  /**
+   * Update legend position (for resize events)
+   */
+  function updateLegendPosition(svg, config, itemsData, svgWidth, svgHeight) {
+    const dimensions = calculateLegendDimensions(config, itemsData);
+    const position = calculateLegendPosition(config, dimensions, svgWidth, svgHeight);
+    
+    svg.select(".legend")
+      .attr("transform", `translate(${position.x}, ${position.y})`);
+  }
+  
+  // Create the legend initially
+  var legendInfo = createLegend(svg, LEGEND_CONFIG, legendItemsData, width, height);
 
   var courseMapDiv = d3.select("#course-map");
   // program-info-more and related divs removed
@@ -581,13 +806,19 @@ d3.json("data/data.json").then(function(data) {
       coursesToHighlight.forEach(courseNum => {
         requisiteLines.selectAll("line")
           .filter(requisite => requisite.course_number == courseNum && coursesToHighlight.includes(requisite.requisite_number))
-          .attr("opacity", 1);
+          .attr("opacity", 1)
+          .attr("stroke-dasharray", function(requisite) {
+            return requisite.requisite_is_primary == 1 ? null : "6,4";
+          });
       });
     } else {
       // Only show lines from the hovered course to its direct prerequisites
       requisiteLines.selectAll("line")
         .filter(requisite => requisite.course_number == course.course_number && directPrereqs.includes(requisite.requisite_number))
-        .attr("opacity", 1);
+        .attr("opacity", 1)
+        .attr("stroke-dasharray", function(requisite) {
+          return requisite.requisite_is_primary == 1 ? null : "6,4";
+        });
     }
     
     // Check for burst effect based on equivalencies data
@@ -613,7 +844,12 @@ d3.json("data/data.json").then(function(data) {
     allBurstData.forEach((burstInfo, courseIndex) => {
       // Limit to first 4 equivalencies to match the original design
       var equivalenciesToShow = burstInfo.equivalencies.slice(0, 4);
-      
+
+      // Determine fill state of the original course dynamically
+      var originalNode = courseNodes.selectAll("circle")
+        .filter(d => d.course_number === burstInfo.course);
+      var originalFill = originalNode.attr("fill");
+
       var burstCircles = courseNodes.selectAll(`.burst-circle-${courseIndex}`)
         .data(equivalenciesToShow);
 
@@ -623,12 +859,16 @@ d3.json("data/data.json").then(function(data) {
         .attr("cx", xcoord(burstInfo.data.x))
         .attr("cy", ycoord(burstInfo.data.y))
         .attr("r", 0)
-        .attr("fill", "white")
+        .attr("fill", function(d) {
+          var courseType = getCourseType(d);
+          // If original is filled, use bursting course's color; if outline, use white
+          return originalFill !== "white" ? (courseColors[courseType] ? courseColors[courseType].color : "#ffba49") : "white";
+        })
         .attr("stroke", function(d) {
           var courseType = getCourseType(d);
           return courseColors[courseType] ? courseColors[courseType].color : "#ffba49";
         })
-  .attr("stroke-width", 1.25)
+        .attr("stroke-width", 1.25)
         .transition()
         .duration(300)
         .attr("r", 16)
@@ -640,7 +880,7 @@ d3.json("data/data.json").then(function(data) {
           // All on the same y level as the main course
           return ycoord(burstInfo.data.y);
         });
-      
+
       // Add text to burst circles showing the actual course numbers
       var burstText = courseNumbers.selectAll(`.burst-text-${courseIndex}`)
         .data(equivalenciesToShow);
@@ -654,7 +894,11 @@ d3.json("data/data.json").then(function(data) {
         .attr("dy", "2.5px")
         .attr("font-family", "Arial")
         .attr("font-size", 14)
-        .attr("fill", "black")
+        .attr("fill", function(d) {
+          var courseType = getCourseType(d);
+          var burstFill = originalFill !== "white" ? (courseColors[courseType] ? courseColors[courseType].color : "#ffba49") : "white";
+          return burstFill !== "white" ? "white" : "black";
+        })
         .attr("opacity", 0)
         .text(d => getNumericPart(d))
         .transition()
@@ -936,8 +1180,9 @@ d3.json("data/data.json").then(function(data) {
         // Update SVG dimensions
         svg.attr("width", width).attr("height", height);
         
-        // Update legend position
-        legend.attr("transform", `translate(${width - 150}, ${height - 80})`);
+        // Recalculate responsive legend config and recreate legend
+        LEGEND_CONFIG = getResponsiveLegendConfig(width, height);
+        createLegend(svg, LEGEND_CONFIG, legendItemsData, width, height);
         
         // Update checkbox container position
         checkboxContainer.attr("x", width - 180);
