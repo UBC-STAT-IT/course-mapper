@@ -449,11 +449,11 @@ d3.json("data/data.json").then(function(data) {
     },
     {
       type: 'line-solid',
-      label: 'Recommended Prerequisite'
+      label: 'Recommended Prerequisites'
     },
     {
       type: 'line-dashed',
-      label: 'Alternative Prerequisite'
+      label: 'Alternative Prerequisites'
     }
   ];
   
