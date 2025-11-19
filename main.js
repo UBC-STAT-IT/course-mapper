@@ -82,12 +82,12 @@ d3.json("data/data.json").then(function(data) {
   var burstEffectsEnabled = true; // Default state - burst effects enabled
   var hierarchicalLayout = false; // Default state - use original layout
   
-  // Create checkbox container in top right of SVG canvas
+  // Create checkbox container in bottom right of SVG canvas
   var checkboxContainer = svg.append("foreignObject")
     .attr("x", width - 180)
-    .attr("y", 10)
+    .attr("y", height - 60)
     .attr("width", 170)
-    .attr("height", 140)
+    .attr("height", 50)
     .append("xhtml:div")
     .style("background", "rgba(255, 255, 255, 0.9)")
     .style("padding", "6px 10px")
@@ -116,6 +116,8 @@ d3.json("data/data.json").then(function(data) {
     .style("cursor", "pointer");
 
 
+  // COMMENTED OUT - TESTING COMPLETE
+  /*
   // Third checkbox row for prerequisite chain
   var chainRow = checkboxContainer.append("div")
     .style("display", "flex")
@@ -166,6 +168,7 @@ d3.json("data/data.json").then(function(data) {
     .text("TESTING: hierarchical")
     .style("color", "#333")
     .style("cursor", "pointer");
+  */
 
   // Add click handlers for checkboxes
   linesRow.on("click", function(event) {
@@ -176,6 +179,8 @@ d3.json("data/data.json").then(function(data) {
     updateLineVisibility();
   });
 
+  // COMMENTED OUT - TESTING COMPLETE
+  /*
   chainRow.on("click", function(event) {
     if (event.target.tagName !== 'INPUT') {
       chainCheckbox.property("checked", !chainCheckbox.property("checked"));
@@ -221,6 +226,7 @@ d3.json("data/data.json").then(function(data) {
       }, 700); // Wait for transition to complete
     }
   });
+  */
 
   function updateLineVisibility() {
     requisiteLines.selectAll("line")
@@ -424,7 +430,7 @@ d3.json("data/data.json").then(function(data) {
       contentWidth: isSmall ? 210 : isMedium ? 245 : 280,
       
       // Position anchor point
-      anchor: "bottom-right"
+      anchor: "top-right"
     };
     
     return baseConfig;
