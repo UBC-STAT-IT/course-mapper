@@ -675,26 +675,45 @@ d3.json("data/data.json").then(function(data) {
   var courseInfoDiv = d3.select("#course-info");
   var courseInfoTemplate = _.template(d3.select("#course-info-template").html());
   var programNav = d3.select("#program-track-nav");
+  
+  // Track currently selected program (defaults to program_id 1 = "All Courses")
+  var currentSelectedProgram = null;
+  
+  // Build a lookup for program requirements HTML from data
+  // Two possible sources: programs.requirements_html OR program_requirements sheet
+  var programRequirementsHTML = {};
+  
+  // Option 1: If requirements_html column exists in programs sheet
+  programs.forEach(function(program) {
+    if (program.requirements_html && program.requirements_html.trim() !== '') {
+      programRequirementsHTML[program.program_id] = program.requirements_html;
+    }
+  });
+  
+  // Option 2: If separate program_requirements sheet exists
+  if (data.program_requirements) {
+    data.program_requirements.forEach(function(req) {
+      if (req.html_content && req.html_content.trim() !== '') {
+        programRequirementsHTML[req.program_id] = req.html_content;
+      }
+    });
+  }
+  
   programs.forEach(function(program){
     programNav.append("div").classed("program",true).html(program.name).on("click",function (event) {
       d3.select("#program-track-nav div.highlight").classed("highlight",false);
       d3.select(this).classed("highlight",true);
-  renderProgram(program,[],600);
-  var reflection = _.sample(reflections.filter(reflection => reflection.program_id == program.program_id));
+      
+      // Store the currently selected program
+      currentSelectedProgram = program;
+      
+      renderProgram(program,[],600);
+      
+      // Show program-specific HTML content from data
+      if (programRequirementsHTML[program.program_id]) {
+        courseInfoDiv.html(programRequirementsHTML[program.program_id]);
+      }
     });
-    // tracks.filter(d => d.program_id == program.program_id).forEach(function(track){
-    //   programNav.append("div").classed("track",true).html(track.name).on("click", function (event) {
-    //     d3.select("#program-track-nav div.highlight").classed("highlight",false);
-    //     d3.select(this).classed("highlight",true);
-    //     var coursesTrack = coursesTracks.filter(d => d.track_id == track.track_id).map(d => d.course_number);
-    //     renderProgram(program,coursesTrack,600);
-    //     programInfo1Div.html(programInfo1Template(track));
-    //     var reflection = _.sample(reflections.filter(reflection => reflection.track_id == track.track_id));
-    //     programInfo2Div.html(programInfo2Template(reflection));
-    //     programInfo1MoreDiv.html(programInfo1MoreTemplate(track));
-    //     programInfo2MoreDiv.html(programInfo2MoreTemplate(reflection));
-    //   });
-    // });
   });
 
   function showCourseInfo (event,course) {
@@ -1005,27 +1024,15 @@ d3.json("data/data.json").then(function(data) {
       courseNumbers.selectAll(".burst-text").remove();
     }
 
-    // Reset course info panel to default
-    var course0 = {"number": "",
-                   "title": "Course Information",
-                   "description": "The course map presents all STAT, MATH, and DSCI courses along with prerequisite/corequisite connections. Hover over a course to view the course description, a complete list of prerequisites/corequisites, credit exclusions and notes. Select programs and streams in the menu above.<br><br>The course map was created by <a href='https://patrickwalls.github.io/'>Patrick Walls</a> with contributions from <a href='https://github.com/zzzzzyzzzzz'>Karen Zhou</a> and <a href='https://github.com/LeoLee5566'>Wuyang Li</a>.<br><br><a rel='license' href='http://creativecommons.org/licenses/by-nc-sa/4.0/'><img alt='Creative Commons Licence' style='border-width:0' src='https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png' /></a><br />This work is licensed under a <a rel='license' href='http://creativecommons.org/licenses/by-nc-sa/4.0/'>Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.",
-                   "prereqs": [],
-                   "coreqs": [], 
-                   "notes": ""};
-    courseInfoDiv.html(courseInfoTemplate(course0));
+    // Reset course info panel to selected program's HTML
+    if (currentSelectedProgram && programRequirementsHTML[currentSelectedProgram.program_id]) {
+      courseInfoDiv.html(programRequirementsHTML[currentSelectedProgram.program_id]);
+    }
   };
 
   function renderProgram (program,courseList,duration,dataSource) {
     // Use provided data source or fall back to original data
     var currentData = dataSource || data;
-    
-    var course0 = {"number": "",
-                   "title": "Course Information",
-                   "description": "The course map presents all STAT, MATH, and DSCI courses along with prerequisite/corequisite connections. Hover over a course to view the course description, a complete list of prerequisites/corequisites, credit exclusions and notes. Select programs and streams in the menu above.<br><br>The course map was created by <a href='https://patrickwalls.github.io/'>Patrick Walls</a> with contributions from <a href='https://github.com/zzzzzyzzzzz'>Karen Zhou</a> and <a href='https://github.com/LeoLee5566'>Wuyang Li</a>.<br><br><a rel='license' href='http://creativecommons.org/licenses/by-nc-sa/4.0/'><img alt='Creative Commons Licence' style='border-width:0' src='https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png' /></a><br />This work is licensed under a <a rel='license' href='http://creativecommons.org/licenses/by-nc-sa/4.0/'>Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.",
-                   "prereqs": [],
-                   "coreqs": [], 
-                   "notes": ""};
-    courseInfoDiv.html(courseInfoTemplate(course0));
 
     var updateCoursesProgram = currentData["courses_program" + program.program_id];
     var updateRequisitesProgram = currentData["requisites_program" + program.program_id];
@@ -1153,6 +1160,13 @@ d3.json("data/data.json").then(function(data) {
   };
 
   renderProgram(programs[0],[],0);
+  currentSelectedProgram = programs[0]; // Set initial selected program
+  
+  // Set initial HTML content for "All Courses" program
+  if (programRequirementsHTML[programs[0].program_id]) {
+    courseInfoDiv.html(programRequirementsHTML[programs[0].program_id]);
+  }
+  
   var reflection = _.sample(reflections.filter(reflection => reflection.program_id == 1));
   d3.select("#program-track-nav div:nth-child(1)").classed("highlight",true);
   

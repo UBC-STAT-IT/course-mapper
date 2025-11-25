@@ -102,6 +102,40 @@ h3, h4 {
   opacity: 1;
 }
 
+/* Styling for track requirement tables */
+#course-info table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  table-layout: fixed;
+}
+
+#course-info table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--light);
+}
+
+#course-info table td:nth-child(2) {
+  width: 60px;
+  text-align: right;
+}
+
+#course-info table tr:last-child td {
+  border-bottom: none;
+}
+
+#course-info table strong {
+  color: var(--ubcblue);
+}
+
+#course-info sup {
+  font-size: 0.8em;
+}
+
+#course-info .responsive-figure-table {
+  margin: 10px 0;
+}
+
 #course-map {
   grid-column: 2;
   grid-row-start: 2;
