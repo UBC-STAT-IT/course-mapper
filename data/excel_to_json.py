@@ -1,16 +1,31 @@
 import os
+import sys
 import pandas
 import json
 
 script_path = os.path.abspath(__file__)
 folder_path = os.path.dirname(script_path)
-data_path = os.path.join(folder_path,"data.xlsx")
+
+if len(sys.argv) > 1:
+    input_file = sys.argv[1]
+else:
+    input_file = "data.xlsx"
+
+if os.path.isabs(input_file):
+    data_path = input_file
+else:
+    data_path = os.path.join(folder_path, input_file)
+
+base_name = os.path.splitext(os.path.basename(data_path))[0]
+output_file = base_name + ".json"
+output_path = os.path.join(folder_path, output_file)
+
 xls = pandas.ExcelFile(data_path)
 data = {}
 for sheet_name in xls.sheet_names:
-    datafile = pandas.read_excel(data_path,sheet_name=sheet_name)
-    datafile.fillna('',inplace=True)
+    datafile = pandas.read_excel(data_path, sheet_name=sheet_name)
+    datafile.fillna('', inplace=True)
     data[sheet_name] = datafile.to_dict(orient="records")
-f = open("data.json","w")
-f.write(json.dumps(data))
-f.close()
+
+with open(output_path, "w") as f:
+    f.write(json.dumps(data))

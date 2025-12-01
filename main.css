@@ -48,6 +48,25 @@ h3, h4 {
   translate: 0% -50%;
 }
 
+.dept-toggle {
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+.dept-toggle:hover {
+  opacity: 0.8;
+}
+
+.dept-toggle.active {
+  opacity: 1;
+}
+
+.dept-separator {
+  margin: 0 10px;
+  opacity: 0.5;
+}
+
 #dashboard {
   display: grid;
   grid-template-columns: 35% 65%;

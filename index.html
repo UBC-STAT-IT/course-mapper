@@ -23,42 +23,58 @@
   <div id="dashboard">
 
     <header id="header">
-      <h2>UBC Statistics</h2>
+      <h2>
+        UBC <span style="margin-left: 15px;"></span>
+        <span id="dept-stats" class="dept-toggle">Statistics</span>
+        <span class="dept-separator">|</span>
+        <span id="dept-dsci" class="dept-toggle active">Data Science</span>
+      </h2>
     </header>
       
     <div id="program-track-nav">
     </div>
 
-    <div id="course-info">
-        <script id="course-info-template" type="text/template">
-          <h3><%= number %> <%= title %></h3>
-          <p><%= description %></p>
-          <% if (prereqs.length > 0) { %>
-          <h4>Prerequisites</h4>
-          <ul><% _.each(prereqs, function(prereq) { %>
-            <li><%= prereq.description %></li>
-            <% }); %>
-          </ul>
-          <% }; %>
-          <% if (coreqs.length > 0) { %>
-          <h4>Corequisites</h4>
-          <ul><% _.each(coreqs, function(coreq) { %>
-            <li><%= coreq.description %></li>
-            <% }); %>
-          </ul>
-          <% }; %>
-          <% if (notes.length > 0) { %>
-          <h4>Notes</h4>
-          <p><%= notes %></p>
-          <% }; %>
-        </script>
-    </div>
+    <script id="course-info-template" type="text/template">
+      <h3><%= number %> <%= title %></h3>
+      <p><%= description %></p>
+      <% if (prereqs.length > 0) { %>
+      <h4>Prerequisites</h4>
+      <ul><% _.each(prereqs, function(prereq) { %>
+        <li><%= prereq.description %></li>
+        <% }); %>
+      </ul>
+      <% }; %>
+      <% if (coreqs.length > 0) { %>
+      <h4>Corequisites</h4>
+      <ul><% _.each(coreqs, function(coreq) { %>
+        <li><%= coreq.description %></li>
+        <% }); %>
+      </ul>
+      <% }; %>
+      <% if (notes.length > 0) { %>
+      <h4>Notes</h4>
+      <p><%= notes %></p>
+      <% }; %>
+    </script>
+    <div id="course-info"></div>
 
     <div id="course-map"><svg></svg></div>
   
   </div>
   
   <script src="main.js"></script>
+  <script>
+    document.getElementById('dept-stats').addEventListener('click', function() {
+      document.getElementById('dept-stats').classList.add('active');
+      document.getElementById('dept-dsci').classList.remove('active');
+      loadDepartmentData('stats');
+    });
+    document.getElementById('dept-dsci').addEventListener('click', function() {
+      document.getElementById('dept-dsci').classList.add('active');
+      document.getElementById('dept-stats').classList.remove('active');
+      loadDepartmentData('dsci');
+    });
+  </script>
 
 </body>
 </html>

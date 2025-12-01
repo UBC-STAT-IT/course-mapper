@@ -1,4 +1,39 @@
-d3.json("data/data.json").then(function(data) {
+// Global variable to track current department and store the initialization function
+var currentDepartment = 'dsci';
+var initializeApp = null;
+var isTransitioning = false;
+
+function loadDepartmentData(department) {
+  if (isTransitioning || department === currentDepartment) return;
+  isTransitioning = true;
+  
+  var dataFile = department === 'stats' ? 'data/data.json' : 'data/dsci_data.json';
+  currentDepartment = department;
+  
+  var transitionDuration = 300;
+  
+  // Fade out existing content
+  d3.select("#course-map").transition().duration(transitionDuration).style("opacity", 0);
+  d3.select("#program-track-nav").transition().duration(transitionDuration).style("opacity", 0);
+  d3.select("#course-info").transition().duration(transitionDuration).style("opacity", 0);
+  
+  // After fade out, clear and load new data
+  setTimeout(function() {
+    d3.select("#course-map svg").selectAll("*").remove();
+    d3.select("#program-track-nav").html("");
+    d3.select("#course-info").html("");
+    
+    // Keep opacity at 0 before loading new content
+    d3.select("#course-map").style("opacity", 0);
+    d3.select("#program-track-nav").style("opacity", 0);
+    d3.select("#course-info").style("opacity", 0);
+    
+    loadNewData(dataFile, transitionDuration);
+  }, transitionDuration);
+}
+
+function loadNewData(dataFile, transitionDuration) {
+  d3.json(dataFile).then(function(data) {
   const courses = data.courses;
   const requisites = data.requisites;
   const programs = data.programs;
@@ -7,21 +42,12 @@ d3.json("data/data.json").then(function(data) {
   const reflections = data.reflections;
   const equivalencies = data.equivalencies;
 
-  // Load hierarchical layout data
-  let hierarchicalData = null;
-  d3.json("data/data_hierarchical.json").then(function(hierData) {
-    hierarchicalData = hierData;
-    console.log("Hierarchical layout loaded:", hierData.layout_metadata);
-  }).catch(function(error) {
-    console.log("Hierarchical layout not available:", error);
-  });
-
   // Color configuration - change colors here to update both nodes and legend
   var courseColors = {
     'S': { color: "#00a896", label: "STAT" },  
-    // 'S': { color: "rgb(50, 159, 91)", label: "STAT" },
     'M': { color: "#e84855", label: "MATH" }, 
-    'D': { color: "#FF7D00", label: "DSCI" }
+    'D': { color: "#FF7D00", label: "DSCI" },
+    'C': { color: "#6a4c93", label: "CPSC" }
   };
 
   var width = parseInt(d3.select("#course-map").style("width"));
@@ -378,10 +404,10 @@ d3.json("data/data.json").then(function(data) {
     const baseConfig = {
       // Spacing & Sizing (scales with viewport)
       padding: isSmall ? 
-        { top: 10, right: 10, bottom: 10, left: 10 } : 
+        { top: 10, right: 10, bottom: 10, left: 15 } : 
         isMedium ? 
-        { top: 15, right: 15, bottom: 15, left: 15 } :
-        { top: 18, right: 18, bottom: 18, left: 18 },
+        { top: 15, right: 15, bottom: 15, left: 20 } :
+        { top: 18, right: 18, bottom: 18, left: 25 },
       
       margin: { 
         fromEdge: isSmall ? 10 : isMedium ? 15 : 20 
@@ -403,11 +429,11 @@ d3.json("data/data.json").then(function(data) {
       
       // Positioning within each row (scales with viewport)
       icon: { 
-        x: isSmall ? 25 : isMedium ? 30 : 35, 
+        x: isSmall ? 30 : isMedium ? 38 : 45, 
         y: isSmall ? 7 : isMedium ? 9 : 10 
       },
       label: { 
-        x: isSmall ? 60 : isMedium ? 75 : 90, 
+        x: isSmall ? 65 : isMedium ? 83 : 100, 
         y: isSmall ? 7 : isMedium ? 9 : 10, 
         dy: "0.35em" 
       },
@@ -439,8 +465,19 @@ d3.json("data/data.json").then(function(data) {
   // Get initial responsive config
   var LEGEND_CONFIG = getResponsiveLegendConfig(width, height);
   
+  // Find which course types actually exist in the data
+  const existingCourseTypes = new Set(courses.map(c => c.course_number.charAt(0)));
+  
+  // Filter courseColors to only include types that exist
+  const filteredCourseColors = Object.keys(courseColors)
+    .filter(key => existingCourseTypes.has(key))
+    .reduce((obj, key) => {
+      obj[key] = courseColors[key];
+      return obj;
+    }, {});
+  
   // Define legend items as data
-  const legendData = Object.keys(courseColors).map(key => courseColors[key]);
+  const legendData = Object.keys(filteredCourseColors).map(key => filteredCourseColors[key]);
   const legendItemsData = [
     ...legendData.map((courseType, index) => ({
       type: 'course-type',
@@ -1218,4 +1255,26 @@ d3.json("data/data.json").then(function(data) {
       }
     }, 150); // 150ms debounce
   });
+  
+  // Fade in new content
+  if (transitionDuration > 0) {
+    d3.select("#course-map").transition().duration(transitionDuration).style("opacity", 1);
+    d3.select("#program-track-nav").transition().duration(transitionDuration).style("opacity", 1);
+    d3.select("#course-info").transition().duration(transitionDuration).style("opacity", 1);
+  } else {
+    d3.select("#course-map").style("opacity", 1);
+    d3.select("#program-track-nav").style("opacity", 1);
+    d3.select("#course-info").style("opacity", 1);
+  }
+  
+  isTransitioning = false;
 });
+}
+
+// Initial load (no transition needed)
+function initialLoad() {
+  var dataFile = currentDepartment === 'stats' ? 'data/data.json' : 'data/dsci_data.json';
+  loadNewData(dataFile, 0);
+}
+
+initialLoad();
