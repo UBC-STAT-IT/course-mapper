@@ -260,6 +260,9 @@ function initializeVisualization(data) {
   }
 
   function getCurrentDataSource() {
+    if (appState && appState.data) {
+      return appState.data;
+    }
     return hierarchicalLayout && hierarchicalData ? hierarchicalData : data;
   }
 
@@ -650,8 +653,11 @@ function initializeVisualization(data) {
     infoNodes.selectAll("circle")
       .interrupt()
       .attr("r", 12);
-    var courseInfo = courses.find(d => d.course_number == course.course_number);
-    var requisiteInfo = requisites.filter(r => r.course_number == course.course_number);
+    var currentData = appState ? appState.data : data;
+    var courseInfo = currentData.courses.find(d => d.course_number == course.course_number);
+    var requisiteInfo = currentData.requisites.filter(r => r.course_number == course.course_number);
+    
+    if (!courseInfo) return;
     
     var courseNumberStr = course.course_number.toString();
     var firstChar = courseNumberStr.charAt(0).toUpperCase();
