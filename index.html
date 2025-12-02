@@ -25,9 +25,9 @@
     <header id="header">
       <h2>
         UBC <span style="margin-left: 15px;"></span>
-        <span id="dept-stats" class="dept-toggle">Statistics</span>
+        <span id="dept-stats" class="dept-toggle active">Statistics</span>
         <span class="dept-separator">|</span>
-        <span id="dept-dsci" class="dept-toggle active">Data Science</span>
+        <span id="dept-dsci" class="dept-toggle">Data Science</span>
       </h2>
     </header>
       
@@ -65,14 +65,16 @@
   <script src="main.js"></script>
   <script>
     document.getElementById('dept-stats').addEventListener('click', function() {
+      if (currentDepartment === 'stats') return;
       document.getElementById('dept-stats').classList.add('active');
       document.getElementById('dept-dsci').classList.remove('active');
-      loadDepartmentData('stats');
+      loadDepartmentData('stats', false);
     });
     document.getElementById('dept-dsci').addEventListener('click', function() {
+      if (currentDepartment === 'dsci') return;
       document.getElementById('dept-dsci').classList.add('active');
       document.getElementById('dept-stats').classList.remove('active');
-      loadDepartmentData('dsci');
+      loadDepartmentData('dsci', false);
     });
   </script>
 
