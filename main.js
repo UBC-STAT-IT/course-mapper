@@ -1,8 +1,107 @@
+const CONFIG = {
+  DATA_FILES: {
+    STATS: 'data/data.json',
+    DSCI: 'data/dsci_data.json'
+  },
+  
+  COURSE_COLORS: {
+    'S': { color: "#00a896", label: "STAT" },
+    'M': { color: "#e84855", label: "MATH" },
+    'D': { color: "#FF7D00", label: "DSCI" },
+    'C': { color: "#6a4c93", label: "CPSC" }
+  },
+  
+  COURSE_NODE: {
+    DEFAULT_RADIUS: 12,
+    HOVER_RADIUS: 16,
+    STROKE_WIDTH: 1.25,
+    DEFAULT_FILL: "white",
+    DEFAULT_STROKE: "black"
+  },
+  
+  COURSE_TEXT: {
+    FONT_FAMILY: "Arial",
+    DEFAULT_SIZE: 11,
+    HOVER_SIZE: 14,
+    DY_OFFSET: "2.5px"
+  },
+  
+  ANIMATIONS: {
+    HOVER_DURATION: 200,
+    BURST_DURATION: 300,
+    TRANSITION_DURATION: 600,
+    ZOOM_RESET_DURATION: 300,
+    FIT_VIEW_DURATION: 400,
+    RESIZE_DEBOUNCE: 150,
+    INITIAL_FIT_DELAY: 100,
+    POST_TRANSITION_FIT_DELAY: 1300,
+    RESIZE_FIT_DELAY: 350
+  },
+  
+  TRANSITIONS: {
+    ENTER_DELAY_MULTIPLIER: 2,
+    UPDATE_DELAY_MULTIPLIER: 1,
+    TRANSITION_BUFFER: 100
+  },
+  
+  LINES: {
+    DEFAULT_OPACITY: 0,
+    PRIMARY_VISIBLE_OPACITY: 0.2,
+    HOVER_OPACITY: 1,
+    DASH_ARRAY: "6,4"
+  },
+  
+  BURST: {
+    MAX_EQUIVALENCIES: 4,
+    HORIZONTAL_OFFSET: 60,
+    SPACING: 45,
+    FALLBACK_COLOR: "#ffba49"
+  },
+  
+  ZOOM: {
+    MIN_SCALE: 0.1,
+    MAX_SCALE: 5,
+    FIT_PADDING: 50
+  },
+  
+  SCALING: {
+    DEFAULT_X_DIVISOR: 10,
+    DEFAULT_Y_DIVISOR: 8,
+    DEFAULT_Y_OFFSET_MULTIPLIER: 0.1,
+    PADDING_RATIO: 0.2
+  },
+  
+  LAYOUT: {
+    CANVAS_HEIGHT_OFFSET: 20,
+    RESIZE_THRESHOLD: 50
+  },
+  
+  CHECKBOX: {
+    X_OFFSET: 180,
+    Y_OFFSET: 60,
+    WIDTH: 170,
+    HEIGHT: 50
+  },
+  
+  HOVER_EFFECTS: {
+    NON_HIGHLIGHTED_OPACITY: 0.3
+  },
+  
+  LEGEND: {
+    CIRCLE_SPACING: 14,
+    BREAKPOINTS: {
+      SMALL: 1000,
+      MEDIUM: 1400
+    }
+  }
+};
+
 var currentDepartment = 'stats';
 var appState = null;
+var isTransitioning = false;
 
 function loadDepartmentData(department, isInitialLoad) {
-  var dataFile = department === 'stats' ? 'data/data.json' : 'data/dsci_data.json';
+  var dataFile = department === 'stats' ? CONFIG.DATA_FILES.STATS : CONFIG.DATA_FILES.DSCI;
   currentDepartment = department;
   
   if (isInitialLoad || !appState) {
@@ -21,6 +120,8 @@ function loadDepartmentData(department, isInitialLoad) {
 }
 
 function smoothTransition(newData) {
+  isTransitioning = true;
+  
   var programs = newData.programs;
   var programRequirementsHTML = {};
   
@@ -48,7 +149,7 @@ function smoothTransition(newData) {
         programNav.selectAll("div").classed("highlight", false);
         d3.select(this).classed("highlight", true);
         appState.currentSelectedProgram = program;
-        appState.renderProgram(program, [], 600, newData);
+        appState.renderProgram(program, [], CONFIG.ANIMATIONS.TRANSITION_DURATION, newData);
         if (programRequirementsHTML[program.program_id]) {
           courseInfoDiv.html(programRequirementsHTML[program.program_id]);
         }
@@ -72,50 +173,46 @@ function smoothTransition(newData) {
   appState.programRequirementsHTML = programRequirementsHTML;
   
   var svg = d3.select("#course-map svg");
-  svg.transition().duration(300).call(appState.zoom.transform, d3.zoomIdentity);
+  svg.transition().duration(CONFIG.ANIMATIONS.ZOOM_RESET_DURATION).call(appState.zoom.transform, d3.zoomIdentity);
   
-  appState.renderProgram(programs[0], [], 600, newData);
+  appState.renderProgram(programs[0], [], CONFIG.ANIMATIONS.TRANSITION_DURATION, newData);
   
   setTimeout(() => {
     appState.fitMapToView(true);
-  }, 1300);
+    isTransitioning = false;
+  }, CONFIG.ANIMATIONS.POST_TRANSITION_FIT_DELAY);
 }
 
 function initializeVisualization(data) {
   const courses = data.courses;
   const requisites = data.requisites;
   const programs = data.programs;
-  const tracks = data.tracks;
-  const coursesTracks = data.courses_tracks;
-  const reflections = data.reflections;
+  const tracks = data.tracks || [];
+  const coursesTracks = data.courses_tracks || [];
+  const reflections = data.reflections || [];
   const equivalencies = data.equivalencies;
 
-  var courseColors = {
-    'S': { color: "#00a896", label: "STAT" },  
-    'M': { color: "#e84855", label: "MATH" }, 
-    'D': { color: "#FF7D00", label: "DSCI" },
-    'C': { color: "#6a4c93", label: "CPSC" }
-  };
+  var courseColors = CONFIG.COURSE_COLORS;
 
   var width = parseInt(d3.select("#course-map").style("width"));
-  var height = parseInt(d3.select("#course-map").style("height")) - 20;
+  var height = parseInt(d3.select("#course-map").style("height")) - CONFIG.LAYOUT.CANVAS_HEIGHT_OFFSET;
   
   function calculateScaling(dataSource) {
     if (!dataSource || !dataSource.courses_program1) {
       return {
-        xscale: width / 10,
-        yscale: height / 8,
+        xscale: width / CONFIG.SCALING.DEFAULT_X_DIVISOR,
+        yscale: height / CONFIG.SCALING.DEFAULT_Y_DIVISOR,
         xoffset: width / 2,
-        yoffset: height * 0.1
+        yoffset: height * CONFIG.SCALING.DEFAULT_Y_OFFSET_MULTIPLIER
       };
     }
     
     const courses = dataSource.courses_program1;
     if (courses.length === 0) return { 
-      xscale: width / 10, 
-      yscale: height / 8,
+      xscale: width / CONFIG.SCALING.DEFAULT_X_DIVISOR, 
+      yscale: height / CONFIG.SCALING.DEFAULT_Y_DIVISOR,
       xoffset: width / 2,
-      yoffset: height * 0.1
+      yoffset: height * CONFIG.SCALING.DEFAULT_Y_OFFSET_MULTIPLIER
     };
     
     const xCoords = courses.map(c => c.x);
@@ -128,12 +225,12 @@ function initializeVisualization(data) {
     const xRange = maxX - minX;
     const yRange = maxY - minY;
     
-    const padding = 0.2;
+    const padding = CONFIG.SCALING.PADDING_RATIO;
     const usableWidth = width * (1 - padding);
     const usableHeight = height * (1 - padding);
     
-    const xs = xRange > 0 ? usableWidth / xRange : width / 10;
-    const ys = yRange > 0 ? usableHeight / yRange : height / 8;
+    const xs = xRange > 0 ? usableWidth / xRange : width / CONFIG.SCALING.DEFAULT_X_DIVISOR;
+    const ys = yRange > 0 ? usableHeight / yRange : height / CONFIG.SCALING.DEFAULT_Y_DIVISOR;
     
     const centerX = (minX + maxX) / 2;
     const centerY = (minY + maxY) / 2;
@@ -168,60 +265,9 @@ function initializeVisualization(data) {
   var svg = d3.select("#course-map svg").attr("width",width).attr("height",height);
   var highlightColor1 = "rgb(0, 85, 183)";
 
-  var linesVisible = true;
   var prereqChainEnabled = false;
   var burstEffectsEnabled = true;
   var hierarchicalLayout = false;
-  
-  var checkboxContainer = svg.append("foreignObject")
-    .attr("x", width - 180)
-    .attr("y", height - 60)
-    .attr("width", 170)
-    .attr("height", 50)
-    .append("xhtml:div")
-    .style("background", "rgba(255, 255, 255, 0.9)")
-    .style("padding", "6px 10px")
-    .style("font-family", "Arial")
-    .style("font-size", "12px")
-    .style("display", "flex")
-    .style("flex-direction", "column")
-    .style("gap", "6px")
-    .style("user-select", "none");
-
-  var linesRow = checkboxContainer.append("div")
-    .style("display", "flex")
-    .style("align-items", "center")
-    .style("gap", "6px")
-    .style("cursor", "pointer");
-
-  var linesCheckbox = linesRow.append("input")
-    .attr("type", "checkbox")
-    .attr("checked", linesVisible)
-    .style("cursor", "pointer");
-
-  linesRow.append("span")
-    .text("TESTING: show lines")
-    .style("color", "#333")
-    .style("cursor", "pointer");
-
-  linesRow.on("click", function(event) {
-    if (event.target.tagName !== 'INPUT') {
-      linesCheckbox.property("checked", !linesCheckbox.property("checked"));
-    }
-    linesVisible = linesCheckbox.property("checked");
-    updateLineVisibility();
-  });
-
-  function updateLineVisibility() {
-    requisiteLines.selectAll("line")
-      .attr("opacity", function(d) {
-        if (linesVisible) {
-          return d.requisite_is_primary == 1 ? 0.2 : 0;
-        } else {
-          return 0;
-        }
-      });
-  }
 
   function updateCircleColors() {
     courseNodes.selectAll("circle")
@@ -244,7 +290,7 @@ function initializeVisualization(data) {
       var courseType = getCourseType(courseNumber);
       return courseColors[courseType] ? courseColors[courseType].color : highlightColor1;
     }
-    return "white";
+    return CONFIG.COURSE_NODE.DEFAULT_FILL;
   }
   
   function getCourseStrokeColor(courseNumber, isRequired, isInList) {
@@ -252,7 +298,7 @@ function initializeVisualization(data) {
     if (isRequired || isInList) {
       return courseColors[courseType] ? courseColors[courseType].color : highlightColor1;
     }
-    return courseColors[courseType] ? courseColors[courseType].color : "black";
+    return courseColors[courseType] ? courseColors[courseType].color : CONFIG.COURSE_NODE.DEFAULT_STROKE;
   }
   
   function getNumericPart(courseNumber) {
@@ -274,7 +320,7 @@ function initializeVisualization(data) {
   var infoNodes = zoomContainer.append("g");
   
   var zoom = d3.zoom()
-    .scaleExtent([0.1, 5])
+    .scaleExtent([CONFIG.ZOOM.MIN_SCALE, CONFIG.ZOOM.MAX_SCALE])
     .on("start", function(event) {
       if (event.sourceEvent && event.sourceEvent.type === "mousedown") {
         svg.style("cursor", "grabbing");
@@ -309,7 +355,7 @@ function initializeVisualization(data) {
 
     if (minX === Infinity) return;
 
-    const padding = 50;
+    const padding = CONFIG.ZOOM.FIT_PADDING;
     const contentWidth = maxX - minX + padding * 2;
     const contentHeight = maxY - minY + padding * 2;
 
@@ -327,15 +373,15 @@ function initializeVisualization(data) {
       .scale(scale);
 
     if (animate) {
-      svg.transition().duration(400).call(zoom.transform, transform);
+      svg.transition().duration(CONFIG.ANIMATIONS.FIT_VIEW_DURATION).call(zoom.transform, transform);
     } else {
       svg.call(zoom.transform, transform);
     }
   }
 
   function getResponsiveLegendConfig(viewportWidth, viewportHeight) {
-    const isSmall = viewportWidth < 1000;
-    const isMedium = viewportWidth >= 1000 && viewportWidth < 1400;
+    const isSmall = viewportWidth < CONFIG.LEGEND.BREAKPOINTS.SMALL;
+    const isMedium = viewportWidth >= CONFIG.LEGEND.BREAKPOINTS.SMALL && viewportWidth < CONFIG.LEGEND.BREAKPOINTS.MEDIUM;
     const isLarge = viewportWidth >= 1400;
     
     const baseConfig = {
@@ -519,7 +565,7 @@ function initializeVisualization(data) {
           
       } else if (d.type === 'required') {
         const numCircles = d.colors.length;
-        const circleSpacing = 14;
+        const circleSpacing = CONFIG.LEGEND.CIRCLE_SPACING;
         const totalWidth = (numCircles - 1) * circleSpacing;
         const startX = config.icon.x - totalWidth / 2;
         
@@ -633,7 +679,7 @@ function initializeVisualization(data) {
       
       currentSelectedProgram = program;
       
-      renderProgram(program,[],600);
+      renderProgram(program,[],CONFIG.ANIMATIONS.TRANSITION_DURATION);
       
       if (programRequirementsHTML[program.program_id]) {
         courseInfoDiv.html(programRequirementsHTML[program.program_id]);
@@ -642,17 +688,19 @@ function initializeVisualization(data) {
   });
 
   function showCourseInfo (event,course) {
+    if (isTransitioning) return;
+    
     courseNodes.selectAll("circle")
       .interrupt()
-      .attr("r", 12)
+      .attr("r", CONFIG.COURSE_NODE.DEFAULT_RADIUS)
       .style("opacity", 1);
     courseNumbers.selectAll("text")
       .interrupt()
-      .attr("font-size", 11)
+      .attr("font-size", CONFIG.COURSE_TEXT.DEFAULT_SIZE)
       .style("opacity", 1);
     infoNodes.selectAll("circle")
       .interrupt()
-      .attr("r", 12);
+      .attr("r", CONFIG.COURSE_NODE.DEFAULT_RADIUS);
     var currentData = appState ? appState.data : data;
     var courseInfo = currentData.courses.find(d => d.course_number == course.course_number);
     var requisiteInfo = currentData.requisites.filter(r => r.course_number == course.course_number);
@@ -669,6 +717,8 @@ function initializeVisualization(data) {
       coursePrefix = "MATH";
     } else if (firstChar === 'D') {
       coursePrefix = "DSCI";
+    } else if (firstChar === 'C') {
+      coursePrefix = "CPSC";
     }
     
     var numericPart = courseNumberStr.substring(1);
@@ -713,48 +763,48 @@ function initializeVisualization(data) {
     courseNodes.selectAll("circle")
       .filter(d => coursesToHighlight.includes(d.course_number))
       .transition()
-      .duration(200)
-      .attr("r", 16);
+      .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
+      .attr("r", CONFIG.COURSE_NODE.HOVER_RADIUS);
     
     courseNodes.selectAll("circle")
       .filter(d => !coursesToHighlight.includes(d.course_number))
       .transition()
-      .duration(200)
-      .style("opacity", 0.3);
+      .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
+      .style("opacity", CONFIG.HOVER_EFFECTS.NON_HIGHLIGHTED_OPACITY);
     
     courseNumbers.selectAll("text")
       .filter(d => coursesToHighlight.includes(d.course_number))
       .transition()
-      .duration(200)
-      .attr("font-size", 14);
+      .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
+      .attr("font-size", CONFIG.COURSE_TEXT.HOVER_SIZE);
     
     courseNumbers.selectAll("text")
       .filter(d => !coursesToHighlight.includes(d.course_number))
       .transition()
-      .duration(200)
-      .style("opacity", 0.3);
+      .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
+      .style("opacity", CONFIG.HOVER_EFFECTS.NON_HIGHLIGHTED_OPACITY);
     
     infoNodes.selectAll("circle")
       .filter(d => coursesToHighlight.includes(d.course_number))
       .transition()
-      .duration(200)
-      .attr("r", 16);
+      .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
+      .attr("r", CONFIG.COURSE_NODE.HOVER_RADIUS);
     
     if (prereqChainEnabled) {
       coursesToHighlight.forEach(courseNum => {
         requisiteLines.selectAll("line")
           .filter(requisite => requisite.course_number == courseNum && coursesToHighlight.includes(requisite.requisite_number))
-          .attr("opacity", 1)
+          .attr("opacity", CONFIG.LINES.HOVER_OPACITY)
           .attr("stroke-dasharray", function(requisite) {
-            return requisite.requisite_is_primary == 1 ? null : "6,4";
+            return requisite.requisite_is_primary == 1 ? null : CONFIG.LINES.DASH_ARRAY;
           });
       });
     } else {
       requisiteLines.selectAll("line")
         .filter(requisite => requisite.course_number == course.course_number && directPrereqs.includes(requisite.requisite_number))
-        .attr("opacity", 1)
+        .attr("opacity", CONFIG.LINES.HOVER_OPACITY)
         .attr("stroke-dasharray", function(requisite) {
-          return requisite.requisite_is_primary == 1 ? null : "6,4";
+          return requisite.requisite_is_primary == 1 ? null : CONFIG.LINES.DASH_ARRAY;
         });
     }
     
@@ -776,7 +826,7 @@ function initializeVisualization(data) {
     }
     
     allBurstData.forEach((burstInfo, courseIndex) => {
-      var equivalenciesToShow = burstInfo.equivalencies.slice(0, 4);
+      var equivalenciesToShow = burstInfo.equivalencies.slice(0, CONFIG.BURST.MAX_EQUIVALENCIES);
 
       var originalNode = courseNodes.selectAll("circle")
         .filter(d => d.course_number === burstInfo.course);
@@ -793,18 +843,18 @@ function initializeVisualization(data) {
         .attr("r", 0)
         .attr("fill", function(d) {
           var courseType = getCourseType(d);
-          return originalFill !== "white" ? (courseColors[courseType] ? courseColors[courseType].color : "#ffba49") : "white";
+          return originalFill !== CONFIG.COURSE_NODE.DEFAULT_FILL ? (courseColors[courseType] ? courseColors[courseType].color : CONFIG.BURST.FALLBACK_COLOR) : CONFIG.COURSE_NODE.DEFAULT_FILL;
         })
         .attr("stroke", function(d) {
           var courseType = getCourseType(d);
-          return courseColors[courseType] ? courseColors[courseType].color : "#ffba49";
+          return courseColors[courseType] ? courseColors[courseType].color : CONFIG.BURST.FALLBACK_COLOR;
         })
-        .attr("stroke-width", 1.25)
+        .attr("stroke-width", CONFIG.COURSE_NODE.STROKE_WIDTH)
         .transition()
-        .duration(300)
-        .attr("r", 16)
+        .duration(CONFIG.ANIMATIONS.BURST_DURATION)
+        .attr("r", CONFIG.COURSE_NODE.HOVER_RADIUS)
         .attr("cx", function(d, i) {
-          return xcoord(burstInfo.data.x) + 60 + i * 45;
+          return xcoord(burstInfo.data.x) + CONFIG.BURST.HORIZONTAL_OFFSET + i * CONFIG.BURST.SPACING;
         })
         .attr("cy", function(d, i) {
           return ycoord(burstInfo.data.y);
@@ -819,21 +869,21 @@ function initializeVisualization(data) {
         .attr("x", xcoord(burstInfo.data.x))
         .attr("y", ycoord(burstInfo.data.y))
         .attr("text-anchor", "middle")
-        .attr("dy", "2.5px")
-        .attr("font-family", "Arial")
-        .attr("font-size", 14)
+        .attr("dy", CONFIG.COURSE_TEXT.DY_OFFSET)
+        .attr("font-family", CONFIG.COURSE_TEXT.FONT_FAMILY)
+        .attr("font-size", CONFIG.COURSE_TEXT.HOVER_SIZE)
         .attr("fill", function(d) {
           var courseType = getCourseType(d);
-          var burstFill = originalFill !== "white" ? (courseColors[courseType] ? courseColors[courseType].color : "#ffba49") : "white";
-          return burstFill !== "white" ? "white" : "black";
+          var burstFill = originalFill !== CONFIG.COURSE_NODE.DEFAULT_FILL ? (courseColors[courseType] ? courseColors[courseType].color : CONFIG.BURST.FALLBACK_COLOR) : CONFIG.COURSE_NODE.DEFAULT_FILL;
+          return burstFill !== CONFIG.COURSE_NODE.DEFAULT_FILL ? CONFIG.COURSE_NODE.DEFAULT_FILL : CONFIG.COURSE_NODE.DEFAULT_STROKE;
         })
         .attr("opacity", 0)
         .text(d => getNumericPart(d))
         .transition()
-        .duration(300)
+        .duration(CONFIG.ANIMATIONS.BURST_DURATION)
         .attr("opacity", 1)
         .attr("x", function(d, i) {
-          return xcoord(burstInfo.data.x) + 60 + i * 45;
+          return xcoord(burstInfo.data.x) + CONFIG.BURST.HORIZONTAL_OFFSET + i * CONFIG.BURST.SPACING;
         })
         .attr("y", function(d, i) {
           return ycoord(burstInfo.data.y);
@@ -842,25 +892,27 @@ function initializeVisualization(data) {
   };
 
   function hideCourseInfo (event,course) {
+    if (isTransitioning) return;
+    
     courseNodes.selectAll("circle")
       .interrupt()
       .transition()
-      .duration(200)
-      .attr("r", 12)
+      .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
+      .attr("r", CONFIG.COURSE_NODE.DEFAULT_RADIUS)
       .style("opacity", 1);
     
     courseNumbers.selectAll("text")
       .interrupt()
       .transition()
-      .duration(200)
-      .attr("font-size", 11)
+      .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
+      .attr("font-size", CONFIG.COURSE_TEXT.DEFAULT_SIZE)
       .style("opacity", 1);
     
     infoNodes.selectAll("circle")
       .interrupt()
       .transition()
-      .duration(200)
-      .attr("r", 12);
+      .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
+      .attr("r", CONFIG.COURSE_NODE.DEFAULT_RADIUS);
     
     var currentDataSource = getCurrentDataSource();
     var directPrereqs = currentDataSource["requisites_program" + currentDataSource.programs[0].program_id]
@@ -895,13 +947,13 @@ function initializeVisualization(data) {
         requisiteLines
           .selectAll("line")
           .filter(requisite => requisite.course_number == courseNum && allCoursesToHide.includes(requisite.requisite_number))
-          .attr("opacity", linesVisible ? (requisite => requisite.requisite_is_primary == 1 ? 0.2 : 0) : 0);
+          .attr("opacity", requisite => requisite.requisite_is_primary == 1 ? CONFIG.LINES.PRIMARY_VISIBLE_OPACITY : CONFIG.LINES.DEFAULT_OPACITY);
       });
     } else {
       requisiteLines
         .selectAll("line")
         .filter(requisite => requisite.course_number == course.course_number && directPrereqs.includes(requisite.requisite_number))
-        .attr("opacity", linesVisible ? (requisite => requisite.requisite_is_primary == 1 ? 0.2 : 0) : 0);
+        .attr("opacity", requisite => requisite.requisite_is_primary == 1 ? CONFIG.LINES.PRIMARY_VISIBLE_OPACITY : CONFIG.LINES.DEFAULT_OPACITY);
     }
     
     var shouldRemoveBurst = false;
@@ -922,6 +974,13 @@ function initializeVisualization(data) {
   };
 
   function renderProgram (program,courseList,duration,dataSource) {
+    if (duration > 0) {
+      isTransitioning = true;
+      setTimeout(() => {
+        isTransitioning = false;
+      }, duration * CONFIG.TRANSITIONS.ENTER_DELAY_MULTIPLIER + CONFIG.TRANSITIONS.TRANSITION_BUFFER);
+    }
+    
     var currentData = dataSource || data;
 
     var updateCoursesProgram = currentData["courses_program" + program.program_id];
@@ -932,8 +991,8 @@ function initializeVisualization(data) {
       .data(updateCoursesProgram,course => course.course_number)
       .join(function (enter) {
         enter.append("circle")
-          .attr("r",12)
-          .attr("fill","white")
+          .attr("r",CONFIG.COURSE_NODE.DEFAULT_RADIUS)
+          .attr("fill",CONFIG.COURSE_NODE.DEFAULT_FILL)
           .attr("stroke","rgba(0,0,0,0)")
           .attr("opacity",0)
           .attr("cx",course => xcoord(course.x))
@@ -943,12 +1002,12 @@ function initializeVisualization(data) {
           .style("opacity",1)
           .attr("fill",course => getCourseColor(course.course_number, course.required, courseList.includes(course.course_number)))
           .attr("stroke",course => getCourseStrokeColor(course.course_number, course.required, courseList.includes(course.course_number)))
-          .attr("stroke-width", 1.25);
+          .attr("stroke-width", CONFIG.COURSE_NODE.STROKE_WIDTH);
       },function (update) {
         update
           .attr("fill",course => getCourseColor(course.course_number, course.required, courseList.includes(course.course_number)))
           .attr("stroke",course => getCourseStrokeColor(course.course_number, course.required, courseList.includes(course.course_number)))
-          .attr("stroke-width", 1.25)
+          .attr("stroke-width", CONFIG.COURSE_NODE.STROKE_WIDTH)
           .transition()
           .delay(duration).duration(duration)
           .attr("cx",course => xcoord(course.x))
@@ -956,7 +1015,7 @@ function initializeVisualization(data) {
       },function (exit) {
         exit.transition()
           .duration(duration)
-          .attr("fill","white")
+          .attr("fill",CONFIG.COURSE_NODE.DEFAULT_FILL)
           .attr("stroke","rgba(0,0,0,0)")
           .attr("opacity",0)
           .remove();
@@ -969,8 +1028,8 @@ function initializeVisualization(data) {
         enter.append("text")
           .attr("x",course => xcoord(course.x))
           .attr("y",course => ycoord(course.y))
-          .attr("text-anchor","middle").attr("dy","2.5px")
-          .attr("font-family","Arial").attr("font-size",11)
+          .attr("text-anchor","middle").attr("dy",CONFIG.COURSE_TEXT.DY_OFFSET)
+          .attr("font-family",CONFIG.COURSE_TEXT.FONT_FAMILY).attr("font-size",CONFIG.COURSE_TEXT.DEFAULT_SIZE)
           .attr("fill",course => (course.required || courseList.includes(course.course_number)) ? "white" : "black")
           .attr("opacity",0)
           .text(d => getNumericPart(d.course_number))
@@ -994,7 +1053,7 @@ function initializeVisualization(data) {
       .selectAll("circle")
       .data(updateCoursesProgram,course => course.course_number)
       .join("circle")
-      .attr("r", 12).style("opacity","0").style("stroke-opacity",0)
+      .attr("r", CONFIG.COURSE_NODE.DEFAULT_RADIUS).style("opacity","0").style("stroke-opacity",0)
       .transition()
       .delay(duration).duration(duration)
       .attr("cx",course => xcoord(course.x))
@@ -1018,7 +1077,7 @@ function initializeVisualization(data) {
           .attr("opacity",0)
           .transition()
           .delay(2*duration).duration(duration)
-          .attr("opacity",requisite => linesVisible ? (requisite.requisite_is_primary == 1 ? 0.2 : 0) : 0);
+          .attr("opacity",requisite => requisite.requisite_is_primary == 1 ? CONFIG.LINES.PRIMARY_VISIBLE_OPACITY : CONFIG.LINES.DEFAULT_OPACITY);
       },function (update) {
         update
           .transition()
@@ -1027,7 +1086,7 @@ function initializeVisualization(data) {
           .attr("y1",requisite => ycoord(requisite.course_y))
           .attr("x2",requisite => xcoord(requisite.requisite_x))
           .attr("y2",requisite => ycoord(requisite.requisite_y))
-          .attr("opacity",requisite => linesVisible ? (requisite.requisite_is_primary == 1 ? 0.2 : 0) : 0);
+          .attr("opacity",requisite => requisite.requisite_is_primary == 1 ? CONFIG.LINES.PRIMARY_VISIBLE_OPACITY : CONFIG.LINES.DEFAULT_OPACITY);
       },function (exit) {
         exit.transition()
           .duration(duration)
@@ -1056,21 +1115,20 @@ function initializeVisualization(data) {
     courseInfoDiv.html(programRequirementsHTML[programs[0].program_id]);
   }
   
-  var reflection = _.sample(reflections.filter(reflection => reflection.program_id == 1));
   d3.select("#program-track-nav div:nth-child(1)").classed("highlight",true);
   
   setTimeout(() => {
     fitMapToView();
-  }, 100);
+  }, CONFIG.ANIMATIONS.INITIAL_FIT_DELAY);
   
   var resizeTimeout;
   window.addEventListener('resize', function() {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(function() {
       var newWidth = parseInt(d3.select("#course-map").style("width"));
-      var newHeight = parseInt(d3.select("#course-map").style("height")) - 20;
+      var newHeight = parseInt(d3.select("#course-map").style("height")) - CONFIG.LAYOUT.CANVAS_HEIGHT_OFFSET;
       
-      if (Math.abs(newWidth - width) > 50 || Math.abs(newHeight - height) > 50) {
+      if (Math.abs(newWidth - width) > CONFIG.LAYOUT.RESIZE_THRESHOLD || Math.abs(newHeight - height) > CONFIG.LAYOUT.RESIZE_THRESHOLD) {
         width = newWidth;
         height = newHeight;
         
@@ -1084,16 +1142,14 @@ function initializeVisualization(data) {
         LEGEND_CONFIG = getResponsiveLegendConfig(width, height);
         createLegend(svg, LEGEND_CONFIG, legendItemsData, width, height);
         
-        checkboxContainer.attr("x", width - 180);
-        
         var currentDataSource = hierarchicalLayout && hierarchicalData ? hierarchicalData : data;
-        renderProgram(programs[0], [], 300, currentDataSource);
+        renderProgram(programs[0], [], CONFIG.ANIMATIONS.ZOOM_RESET_DURATION, currentDataSource);
         
         setTimeout(() => {
           fitMapToView();
-        }, 350);
+        }, CONFIG.ANIMATIONS.RESIZE_FIT_DELAY);
       }
-    }, 150);
+    }, CONFIG.ANIMATIONS.RESIZE_DEBOUNCE);
   });
   
   appState = {
@@ -1109,10 +1165,10 @@ function initializeVisualization(data) {
     fitMapToView: fitMapToView,
     calculateScaling: function(dataSource, w, h) {
       if (!dataSource || !dataSource.courses_program1) {
-        return { xscale: w / 10, yscale: h / 8, xoffset: w / 2, yoffset: h * 0.1 };
+        return { xscale: w / CONFIG.SCALING.DEFAULT_X_DIVISOR, yscale: h / CONFIG.SCALING.DEFAULT_Y_DIVISOR, xoffset: w / 2, yoffset: h * CONFIG.SCALING.DEFAULT_Y_OFFSET_MULTIPLIER };
       }
       const courses = dataSource.courses_program1;
-      if (courses.length === 0) return { xscale: w / 10, yscale: h / 8, xoffset: w / 2, yoffset: h * 0.1 };
+      if (courses.length === 0) return { xscale: w / CONFIG.SCALING.DEFAULT_X_DIVISOR, yscale: h / CONFIG.SCALING.DEFAULT_Y_DIVISOR, xoffset: w / 2, yoffset: h * CONFIG.SCALING.DEFAULT_Y_OFFSET_MULTIPLIER };
       const xCoords = courses.map(c => c.x);
       const yCoords = courses.map(c => c.y);
       const minX = Math.min(...xCoords);
@@ -1121,11 +1177,11 @@ function initializeVisualization(data) {
       const maxY = Math.max(...yCoords);
       const xRange = maxX - minX;
       const yRange = maxY - minY;
-      const padding = 0.2;
+      const padding = CONFIG.SCALING.PADDING_RATIO;
       const usableWidth = w * (1 - padding);
       const usableHeight = h * (1 - padding);
-      const xs = xRange > 0 ? usableWidth / xRange : w / 10;
-      const ys = yRange > 0 ? usableHeight / yRange : h / 8;
+      const xs = xRange > 0 ? usableWidth / xRange : w / CONFIG.SCALING.DEFAULT_X_DIVISOR;
+      const ys = yRange > 0 ? usableHeight / yRange : h / CONFIG.SCALING.DEFAULT_Y_DIVISOR;
       const centerX = (minX + maxX) / 2;
       const centerY = (minY + maxY) / 2;
       return {
