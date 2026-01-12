@@ -153,6 +153,8 @@ h3, h4 {
 
 #course-info .responsive-figure-table {
   margin: 10px 0;
+  margin-inline-start: 0;
+  margin-inline-end: 0;
 }
 
 #course-map {
@@ -163,4 +165,10 @@ h3, h4 {
   border-radius: 2px;
   margin: 10px 10px 10px 0px;
   padding: 10px;
+}
+
+.degree-note {
+    font-size: 0.9em;
+    color: #666;
+    margin-bottom: 1em;
 }

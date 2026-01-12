@@ -1,8 +1,8 @@
-# UBC MATH Courses
+# UBC STAT & DSCI Course Mapper
 
-Interactive map of UBC MATH courses built with [D3.js](https://d3js.org). See course information on the [UBC Course Calendar](http://www.calendar.ubc.ca/vancouver/courses.cfm?page=code&code=MATH).
+Interactive map of UBC STAT and DSCI courses built with [D3.js](https://d3js.org). See course information on the [UBC Course Calendar](http://www.calendar.ubc.ca/vancouver/courses.cfm).
 
-The course map was created by [Patrick Walls](https://patrickwalls.github.io/) with contributions from [Karen Zhou](https://github.com/zzzzzyzzzzz) and [Wuyang Li](https://github.com/LeoLee5566).
+This course mapper was created by [Siddarth Chilukuri](https://github.com/siddiskid), Kevin Lin, and Brian Kim, based on the original course map by [Patrick Walls](https://patrickwalls.github.io/), with contributions from [Karen Zhou](https://github.com/zzzzzyzzzzz) and [Wuyang Li](https://github.com/LeoLee5566).
 
 ---
 
