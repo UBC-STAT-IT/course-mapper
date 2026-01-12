@@ -2,7 +2,7 @@
 
 Interactive map of UBC STAT and DSCI courses built with [D3.js](https://d3js.org). See course information on the [UBC Course Calendar](http://www.calendar.ubc.ca/vancouver/courses.cfm).
 
-This course mapper was created by [Siddarth Chilukuri](https://github.com/siddiskid), Kevin Lin, and Brian Kim, based on the original course map by [Patrick Walls](https://patrickwalls.github.io/), with contributions from [Karen Zhou](https://github.com/zzzzzyzzzzz) and [Wuyang Li](https://github.com/LeoLee5566).
+This course mapper was created by [Siddarth Chilukuri](https://github.com/siddiskid), Kevin Lin, and Brian Kim, based on the original course map by [Patrick Walls](https://patrickwalls.github.io/), [Karen Zhou](https://github.com/zzzzzyzzzzz), and [Wuyang Li](https://github.com/LeoLee5566).
 
 ---
 
