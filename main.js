@@ -678,6 +678,9 @@ function initializeVisualization(data) {
       d3.select(this).classed("highlight",true);
       
       currentSelectedProgram = program;
+      if (appState) {
+        appState.currentSelectedProgram = program;
+      }
       
       renderProgram(program,[],CONFIG.ANIMATIONS.TRANSITION_DURATION);
       
@@ -732,7 +735,7 @@ function initializeVisualization(data) {
     courseInfoDiv.html(courseInfoTemplate(courseInfoObject));
     
     var currentDataSource = getCurrentDataSource();
-    var directPrereqs = currentDataSource["requisites_program" + currentDataSource.programs[0].program_id]
+    var directPrereqs = (currentDataSource.requisites_programs || currentDataSource["requisites_program" + currentDataSource.programs[0].program_id])
       .filter(requisite => requisite.course_number == course.course_number)
       .map(requisite => requisite.requisite_number);
     
@@ -742,7 +745,7 @@ function initializeVisualization(data) {
       }
       visited.add(courseNumber);
       
-      var directPrereqs = currentDataSource["requisites_program" + currentDataSource.programs[0].program_id]
+      var directPrereqs = (currentDataSource.requisites_programs || currentDataSource["requisites_program" + currentDataSource.programs[0].program_id])
         .filter(requisite => requisite.course_number == courseNumber)
         .map(requisite => requisite.requisite_number);
       
@@ -915,7 +918,7 @@ function initializeVisualization(data) {
       .attr("r", CONFIG.COURSE_NODE.DEFAULT_RADIUS);
     
     var currentDataSource = getCurrentDataSource();
-    var directPrereqs = currentDataSource["requisites_program" + currentDataSource.programs[0].program_id]
+    var directPrereqs = (currentDataSource.requisites_programs || currentDataSource["requisites_program" + currentDataSource.programs[0].program_id])
       .filter(requisite => requisite.course_number == course.course_number)
       .map(requisite => requisite.requisite_number);
     
@@ -925,7 +928,7 @@ function initializeVisualization(data) {
       }
       visited.add(courseNumber);
       
-      var directPrereqs = currentDataSource["requisites_program" + currentDataSource.programs[0].program_id]
+      var directPrereqs = (currentDataSource.requisites_programs || currentDataSource["requisites_program" + currentDataSource.programs[0].program_id])
         .filter(requisite => requisite.course_number == courseNumber)
         .map(requisite => requisite.requisite_number);
       
@@ -968,7 +971,9 @@ function initializeVisualization(data) {
       courseNumbers.selectAll(".burst-text").remove();
     }
 
-    if (currentSelectedProgram && programRequirementsHTML[currentSelectedProgram.program_id]) {
+    if (appState && appState.currentSelectedProgram && appState.programRequirementsHTML[appState.currentSelectedProgram.program_id]) {
+      courseInfoDiv.html(appState.programRequirementsHTML[appState.currentSelectedProgram.program_id]);
+    } else if (currentSelectedProgram && programRequirementsHTML[currentSelectedProgram.program_id]) {
       courseInfoDiv.html(programRequirementsHTML[currentSelectedProgram.program_id]);
     }
   };
@@ -984,7 +989,7 @@ function initializeVisualization(data) {
     var currentData = dataSource || data;
 
     var updateCoursesProgram = currentData["courses_program" + program.program_id];
-    var updateRequisitesProgram = currentData["requisites_program" + program.program_id];
+    var updateRequisitesProgram = currentData.requisites_programs || currentData["requisites_program" + program.program_id];
 
     courseNodes
       .selectAll("circle")
