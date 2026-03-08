@@ -212,7 +212,7 @@ h3, h4 {
   padding: 50px 20px 20px 20px;
 }
 
-/* Hide the SVG legend since we're moving it to the panel */
+/* Hide the SVG legend on mobile/tablet, show on desktop */
 svg .legend {
   display: none;
 }
@@ -581,6 +581,18 @@ svg .legend {
   
   .zoom-controls {
     display: none;
+  }
+  
+  .legend-toggle-btn {
+    display: none;
+  }
+  
+  .legend-panel {
+    display: none;
+  }
+  
+  svg .legend {
+    display: block;
   }
 }
 

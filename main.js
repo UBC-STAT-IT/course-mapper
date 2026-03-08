@@ -720,27 +720,27 @@ function initializeVisualization(data) {
       html += '<div style="display: flex; align-items: center; margin-bottom: 16px;">';
       
       if (item.type === 'course-type') {
-        html += `<svg width="30" height="30" style="margin-right: 12px; flex-shrink: 0;">
-          <circle cx="15" cy="15" r="10" fill="white" stroke="${item.color}" stroke-width="2"/>
+        html += `<svg width="70" height="30" style="margin-right: 12px; flex-shrink: 0;">
+          <circle cx="35" cy="15" r="10" fill="white" stroke="${item.color}" stroke-width="2"/>
         </svg>`;
         html += `<span style="font-size: 14px; color: #333;">${item.label}</span>`;
       } else if (item.type === 'required') {
-        html += '<svg width="50" height="30" style="margin-right: 12px; flex-shrink: 0;">';
-        const spacing = 14;
+        html += '<svg width="70" height="30" style="margin-right: 12px; flex-shrink: 0;">';
+        const spacing = 16;
         const startX = 10;
         item.colors.forEach((color, idx) => {
-          html += `<circle cx="${startX + idx * spacing}" cy="15" r="8" fill="${color}" stroke="${color}" stroke-width="2"/>`;
+          html += `<circle cx="${startX + idx * spacing}" cy="15" r="7" fill="${color}" stroke="${color}" stroke-width="2"/>`;
         });
         html += '</svg>';
         html += `<span style="font-size: 14px; color: #333;">${item.label}</span>`;
       } else if (item.type === 'line-solid') {
-        html += `<svg width="30" height="30" style="margin-right: 12px; flex-shrink: 0;">
-          <line x1="5" y1="15" x2="25" y2="15" stroke="#333" stroke-width="2"/>
+        html += `<svg width="70" height="30" style="margin-right: 12px; flex-shrink: 0;">
+          <line x1="25" y1="15" x2="45" y2="15" stroke="#333" stroke-width="2"/>
         </svg>`;
         html += `<span style="font-size: 14px; color: #333;">${item.label}</span>`;
       } else if (item.type === 'line-dashed') {
-        html += `<svg width="30" height="30" style="margin-right: 12px; flex-shrink: 0;">
-          <line x1="5" y1="15" x2="25" y2="15" stroke="#333" stroke-width="2" stroke-dasharray="4,3"/>
+        html += `<svg width="70" height="30" style="margin-right: 12px; flex-shrink: 0;">
+          <line x1="25" y1="15" x2="45" y2="15" stroke="#333" stroke-width="2" stroke-dasharray="4,3"/>
         </svg>`;
         html += `<span style="font-size: 14px; color: #333;">${item.label}</span>`;
       }
