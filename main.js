@@ -146,6 +146,7 @@ function smoothTransition(newData) {
       .classed("highlight", i === 0)
       .html(program.name)
       .on("click", function() {
+        if (isTransitioning) return;
         programNav.selectAll("div").classed("highlight", false);
         d3.select(this).classed("highlight", true);
         appState.currentSelectedProgram = program;
@@ -180,7 +181,7 @@ function smoothTransition(newData) {
   setTimeout(() => {
     appState.fitMapToView(true);
     isTransitioning = false;
-  }, CONFIG.ANIMATIONS.POST_TRANSITION_FIT_DELAY);
+  }, CONFIG.ANIMATIONS.TRANSITION_DURATION * (CONFIG.TRANSITIONS.ENTER_DELAY_MULTIPLIER + 1) + CONFIG.TRANSITIONS.TRANSITION_BUFFER + 100);
 }
 
 function initializeVisualization(data) {
@@ -358,6 +359,10 @@ function initializeVisualization(data) {
       
       courseNodes.selectAll(".burst-circle").remove();
       courseNumbers.selectAll(".burst-text").remove();
+      
+      // Clear the currently selected course
+      currentSelectedCourse = null;
+      if (appState) appState.currentSelectedCourse = null;
       
       // Reset course info to program requirements
       if (appState && appState.currentSelectedProgram && appState.programRequirementsHTML[appState.currentSelectedProgram.program_id]) {
@@ -756,6 +761,7 @@ function initializeVisualization(data) {
   var programNav = d3.select("#program-track-nav");
   
   var currentSelectedProgram = null;
+  var currentSelectedCourse = null;
   
   var programRequirementsHTML = {};
   
@@ -775,6 +781,7 @@ function initializeVisualization(data) {
   
   programs.forEach(function(program){
     programNav.append("div").classed("program",true).html(program.name).on("click",function (event) {
+      if (isTransitioning) return;
       d3.select("#program-track-nav div.highlight").classed("highlight",false);
       d3.select(this).classed("highlight",true);
       
@@ -794,7 +801,12 @@ function initializeVisualization(data) {
   function showCourseInfo (event,course) {
     if (isTransitioning) return;
     
+    // Set the currently selected course
+    currentSelectedCourse = course.course_number;
+    if (appState) appState.currentSelectedCourse = course.course_number;
+    
     // First, clear any existing highlights from previous course
+    // Interrupt transitions and ensure proper final state
     courseNodes.selectAll("circle")
       .interrupt()
       .attr("r", CONFIG.COURSE_NODE.DEFAULT_RADIUS)
@@ -1082,6 +1094,10 @@ function initializeVisualization(data) {
       courseNodes.selectAll(".burst-circle").remove();
       courseNumbers.selectAll(".burst-text").remove();
     }
+    
+    // Clear the currently selected course
+    currentSelectedCourse = null;
+    if (appState) appState.currentSelectedCourse = null;
 
     if (appState && appState.currentSelectedProgram && appState.programRequirementsHTML[appState.currentSelectedProgram.program_id]) {
       courseInfoDiv.html(appState.programRequirementsHTML[appState.currentSelectedProgram.program_id]);
@@ -1095,7 +1111,7 @@ function initializeVisualization(data) {
       isTransitioning = true;
       setTimeout(() => {
         isTransitioning = false;
-      }, duration * CONFIG.TRANSITIONS.ENTER_DELAY_MULTIPLIER + CONFIG.TRANSITIONS.TRANSITION_BUFFER);
+      }, duration * (CONFIG.TRANSITIONS.ENTER_DELAY_MULTIPLIER + 1) + CONFIG.TRANSITIONS.TRANSITION_BUFFER);
     }
     
     var currentData = dataSource || data;
@@ -1112,7 +1128,7 @@ function initializeVisualization(data) {
           .attr("fill",CONFIG.COURSE_NODE.DEFAULT_FILL)
           .attr("stroke",CONFIG.COURSE_NODE.DEFAULT_STROKE)
           .attr("stroke-width", CONFIG.COURSE_NODE.STROKE_WIDTH)
-          .attr("opacity",0)
+          .style("opacity",0)
           .attr("cx",course => xcoord(course.x))
           .attr("cy",course => ycoord(course.y))
           .transition()
@@ -1135,7 +1151,7 @@ function initializeVisualization(data) {
           .duration(duration)
           .attr("fill",CONFIG.COURSE_NODE.DEFAULT_FILL)
           .attr("stroke",CONFIG.COURSE_NODE.DEFAULT_STROKE)
-          .attr("opacity",0)
+          .style("opacity",0)
           .remove();
       });
 
@@ -1149,11 +1165,11 @@ function initializeVisualization(data) {
           .attr("text-anchor","middle").attr("dy",CONFIG.COURSE_TEXT.DY_OFFSET)
           .attr("font-family",CONFIG.COURSE_TEXT.FONT_FAMILY).attr("font-size",CONFIG.COURSE_TEXT.DEFAULT_SIZE)
           .attr("fill",course => (course.required || courseList.includes(course.course_number)) ? "white" : "black")
-          .attr("opacity",0)
+          .style("opacity",0)
           .text(d => getNumericPart(d.course_number))
           .transition()
           .delay(2*duration).duration(duration)
-          .attr("opacity",1);
+          .style("opacity",1);
       },function (update) {
         update
           .attr("fill",course => (course.required || courseList.includes(course.course_number)) ? "white" : "black")
@@ -1194,7 +1210,14 @@ function initializeVisualization(data) {
         if (window.innerWidth < 1024 && !isTransitioning) {
           event.preventDefault();
           event.stopPropagation();
-          showCourseInfo(event, d);
+          
+          // Toggle: if clicking the same course, clear highlights
+          var selectedCourse = appState ? appState.currentSelectedCourse : currentSelectedCourse;
+          if (selectedCourse === d.course_number) {
+            hideCourseInfo(event, d);
+          } else {
+            showCourseInfo(event, d);
+          }
         }
       });
 
@@ -1329,6 +1352,7 @@ function initializeVisualization(data) {
       };
     },
     currentSelectedProgram: currentSelectedProgram,
+    currentSelectedCourse: currentSelectedCourse,
     programRequirementsHTML: programRequirementsHTML
   };
 }

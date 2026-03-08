@@ -87,13 +87,13 @@
   <script>
     // Department toggle functionality
     document.getElementById('dept-stats').addEventListener('click', function() {
-      if (currentDepartment === 'stats') return;
+      if (currentDepartment === 'stats' || isTransitioning) return;
       document.getElementById('dept-stats').classList.add('active');
       document.getElementById('dept-dsci').classList.remove('active');
       loadDepartmentData('stats', false);
     });
     document.getElementById('dept-dsci').addEventListener('click', function() {
-      if (currentDepartment === 'dsci') return;
+      if (currentDepartment === 'dsci' || isTransitioning) return;
       document.getElementById('dept-dsci').classList.add('active');
       document.getElementById('dept-stats').classList.remove('active');
       loadDepartmentData('dsci', false);

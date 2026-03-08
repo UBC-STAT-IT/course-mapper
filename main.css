@@ -97,7 +97,7 @@ h3, h4 {
 /* Zoom Controls */
 .zoom-controls {
   position: absolute;
-  bottom: 20px;
+  bottom: 48%;
   right: 20px;
   display: flex;
   flex-direction: column;
@@ -510,7 +510,7 @@ svg .legend {
   }
   
   .zoom-controls {
-    bottom: 15px;
+    bottom: 44%;
     right: 15px;
     gap: 6px;
   }
@@ -592,7 +592,7 @@ svg .legend {
   }
   
   .zoom-controls {
-    bottom: 10px;
+    bottom: 42%;
     right: 10px;
   }
 }
