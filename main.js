@@ -263,6 +263,11 @@ function initializeVisualization(data) {
   }
   
   var svg = d3.select("#course-map svg").attr("width",width).attr("height",height);
+  
+  // Firefox SVG rendering fix: ensure proper namespace and rendering attributes
+  svg.attr("xmlns", "http://www.w3.org/2000/svg")
+     .style("shape-rendering", "geometricPrecision");
+     
   var highlightColor1 = "rgb(0, 85, 183)";
 
   var prereqChainEnabled = false;
@@ -314,6 +319,56 @@ function initializeVisualization(data) {
 
   var zoomContainer = svg.append("g").attr("class", "zoom-container");
   
+  // Add invisible background rect FIRST (at bottom of z-order) to capture clicks on empty space
+  var background = zoomContainer.append("rect")
+    .attr("class", "background-rect")
+    .attr("x", -10000)
+    .attr("y", -10000)
+    .attr("width", 20000)
+    .attr("height", 20000)
+    .attr("fill", "transparent")
+    .style("pointer-events", "all");
+  
+  // Add click/touch handler for background
+  background.on("click touchstart", function(event) {
+    if (window.innerWidth < 1024 || event.type === 'click') {
+      // Clear highlights and reset to program info
+      courseNodes.selectAll("circle")
+        .interrupt()
+        .transition()
+        .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
+        .attr("r", CONFIG.COURSE_NODE.DEFAULT_RADIUS)
+        .style("opacity", 1);
+      
+      courseNumbers.selectAll("text")
+        .interrupt()
+        .transition()
+        .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
+        .attr("font-size", CONFIG.COURSE_TEXT.DEFAULT_SIZE)
+        .style("opacity", 1);
+      
+      infoNodes.selectAll("circle")
+        .interrupt()
+        .transition()
+        .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
+        .attr("r", window.innerWidth < 1024 ? CONFIG.COURSE_NODE.DEFAULT_RADIUS + 4 : CONFIG.COURSE_NODE.DEFAULT_RADIUS);
+      
+      requisiteLines.selectAll("line")
+        .attr("opacity", CONFIG.LINES.PRIMARY_VISIBLE_OPACITY);
+      
+      courseNodes.selectAll(".burst-circle").remove();
+      courseNumbers.selectAll(".burst-text").remove();
+      
+      // Reset course info to program requirements
+      if (appState && appState.currentSelectedProgram && appState.programRequirementsHTML[appState.currentSelectedProgram.program_id]) {
+        courseInfoDiv.html(appState.programRequirementsHTML[appState.currentSelectedProgram.program_id]);
+      } else if (currentSelectedProgram && programRequirementsHTML[currentSelectedProgram.program_id]) {
+        courseInfoDiv.html(programRequirementsHTML[currentSelectedProgram.program_id]);
+      }
+    }
+  });
+  
+  // Now add the content groups on top of the background
   var requisiteLines = zoomContainer.append("g");
   var courseNodes = zoomContainer.append("g");
   var courseNumbers = zoomContainer.append("g");
@@ -335,6 +390,9 @@ function initializeVisualization(data) {
   
   svg.call(zoom)
     .style("cursor", "default");
+  
+  // Remove any old clear handlers - background rect in zoomContainer handles this now
+  svg.on("click.clear touchstart.clear", null);
 
   function fitMapToView(animate) {
     const nodes = svg.selectAll(".zoom-container circle:not(.burst-circle)").nodes();
@@ -456,11 +514,11 @@ function initializeVisualization(data) {
     },
     {
       type: 'line-solid',
-      label: 'Recommended Prerequisites'
+      label: 'Prerequisites'
     },
     {
       type: 'line-dashed',
-      label: 'Alternative Prerequisites'
+      label: 'Co-requisites'
     }
   ];
   
@@ -647,7 +705,50 @@ function initializeVisualization(data) {
       .attr("transform", `translate(${position.x}, ${position.y})`);
   }
   
+  function populateHTMLLegend(itemsData) {
+    const legendContent = document.getElementById('legend-content');
+    
+    let html = '<div style="padding: 10px;">';
+    html += '<h3 style="margin: 0 0 20px 0; font-size: 18px; font-weight: 600; color: #002145;">Legend</h3>';
+    
+    itemsData.forEach(item => {
+      html += '<div style="display: flex; align-items: center; margin-bottom: 16px;">';
+      
+      if (item.type === 'course-type') {
+        html += `<svg width="30" height="30" style="margin-right: 12px; flex-shrink: 0;">
+          <circle cx="15" cy="15" r="10" fill="white" stroke="${item.color}" stroke-width="2"/>
+        </svg>`;
+        html += `<span style="font-size: 14px; color: #333;">${item.label}</span>`;
+      } else if (item.type === 'required') {
+        html += '<svg width="50" height="30" style="margin-right: 12px; flex-shrink: 0;">';
+        const spacing = 14;
+        const startX = 10;
+        item.colors.forEach((color, idx) => {
+          html += `<circle cx="${startX + idx * spacing}" cy="15" r="8" fill="${color}" stroke="${color}" stroke-width="2"/>`;
+        });
+        html += '</svg>';
+        html += `<span style="font-size: 14px; color: #333;">${item.label}</span>`;
+      } else if (item.type === 'line-solid') {
+        html += `<svg width="30" height="30" style="margin-right: 12px; flex-shrink: 0;">
+          <line x1="5" y1="15" x2="25" y2="15" stroke="#333" stroke-width="2"/>
+        </svg>`;
+        html += `<span style="font-size: 14px; color: #333;">${item.label}</span>`;
+      } else if (item.type === 'line-dashed') {
+        html += `<svg width="30" height="30" style="margin-right: 12px; flex-shrink: 0;">
+          <line x1="5" y1="15" x2="25" y2="15" stroke="#333" stroke-width="2" stroke-dasharray="4,3"/>
+        </svg>`;
+        html += `<span style="font-size: 14px; color: #333;">${item.label}</span>`;
+      }
+      
+      html += '</div>';
+    });
+    
+    html += '</div>';
+    legendContent.innerHTML = html;
+  }
+  
   var legendInfo = createLegend(svg, LEGEND_CONFIG, legendItemsData, width, height);
+  populateHTMLLegend(legendItemsData);
 
   var courseMapDiv = d3.select("#course-map");
   var courseInfoDiv = d3.select("#course-info");
@@ -693,6 +794,7 @@ function initializeVisualization(data) {
   function showCourseInfo (event,course) {
     if (isTransitioning) return;
     
+    // First, clear any existing highlights from previous course
     courseNodes.selectAll("circle")
       .interrupt()
       .attr("r", CONFIG.COURSE_NODE.DEFAULT_RADIUS)
@@ -703,7 +805,17 @@ function initializeVisualization(data) {
       .style("opacity", 1);
     infoNodes.selectAll("circle")
       .interrupt()
-      .attr("r", CONFIG.COURSE_NODE.DEFAULT_RADIUS);
+      .attr("r", window.innerWidth < 1024 ? CONFIG.COURSE_NODE.DEFAULT_RADIUS + 4 : CONFIG.COURSE_NODE.DEFAULT_RADIUS);
+    
+    // Clear all prerequisite lines
+    requisiteLines.selectAll("line")
+      .attr("opacity", CONFIG.LINES.PRIMARY_VISIBLE_OPACITY);
+    
+    // Remove any existing burst circles
+    courseNodes.selectAll(".burst-circle").remove();
+    courseNumbers.selectAll(".burst-text").remove();
+    
+    // Now show info for the new course
     var currentData = appState ? appState.data : data;
     var courseInfo = currentData.courses.find(d => d.course_number == course.course_number);
     var requisiteInfo = currentData.requisites.filter(r => r.course_number == course.course_number);
@@ -799,7 +911,7 @@ function initializeVisualization(data) {
           .filter(requisite => requisite.course_number == courseNum && coursesToHighlight.includes(requisite.requisite_number))
           .attr("opacity", CONFIG.LINES.HOVER_OPACITY)
           .attr("stroke-dasharray", function(requisite) {
-            return requisite.requisite_is_primary == 1 ? null : CONFIG.LINES.DASH_ARRAY;
+            return requisite.requisite_is_co == 1 ? CONFIG.LINES.DASH_ARRAY : null;
           });
       });
     } else {
@@ -807,7 +919,7 @@ function initializeVisualization(data) {
         .filter(requisite => requisite.course_number == course.course_number && directPrereqs.includes(requisite.requisite_number))
         .attr("opacity", CONFIG.LINES.HOVER_OPACITY)
         .attr("stroke-dasharray", function(requisite) {
-          return requisite.requisite_is_primary == 1 ? null : CONFIG.LINES.DASH_ARRAY;
+          return requisite.requisite_is_co == 1 ? CONFIG.LINES.DASH_ARRAY : null;
         });
     }
     
@@ -950,13 +1062,13 @@ function initializeVisualization(data) {
         requisiteLines
           .selectAll("line")
           .filter(requisite => requisite.course_number == courseNum && allCoursesToHide.includes(requisite.requisite_number))
-          .attr("opacity", requisite => requisite.requisite_is_primary == 1 ? CONFIG.LINES.PRIMARY_VISIBLE_OPACITY : CONFIG.LINES.DEFAULT_OPACITY);
+          .attr("opacity", CONFIG.LINES.PRIMARY_VISIBLE_OPACITY);
       });
     } else {
       requisiteLines
         .selectAll("line")
         .filter(requisite => requisite.course_number == course.course_number && directPrereqs.includes(requisite.requisite_number))
-        .attr("opacity", requisite => requisite.requisite_is_primary == 1 ? CONFIG.LINES.PRIMARY_VISIBLE_OPACITY : CONFIG.LINES.DEFAULT_OPACITY);
+        .attr("opacity", CONFIG.LINES.PRIMARY_VISIBLE_OPACITY);
     }
     
     var shouldRemoveBurst = false;
@@ -998,7 +1110,8 @@ function initializeVisualization(data) {
         enter.append("circle")
           .attr("r",CONFIG.COURSE_NODE.DEFAULT_RADIUS)
           .attr("fill",CONFIG.COURSE_NODE.DEFAULT_FILL)
-          .attr("stroke","rgba(0,0,0,0)")
+          .attr("stroke",CONFIG.COURSE_NODE.DEFAULT_STROKE)
+          .attr("stroke-width", CONFIG.COURSE_NODE.STROKE_WIDTH)
           .attr("opacity",0)
           .attr("cx",course => xcoord(course.x))
           .attr("cy",course => ycoord(course.y))
@@ -1021,7 +1134,7 @@ function initializeVisualization(data) {
         exit.transition()
           .duration(duration)
           .attr("fill",CONFIG.COURSE_NODE.DEFAULT_FILL)
-          .attr("stroke","rgba(0,0,0,0)")
+          .attr("stroke",CONFIG.COURSE_NODE.DEFAULT_STROKE)
           .attr("opacity",0)
           .remove();
       });
@@ -1051,14 +1164,22 @@ function initializeVisualization(data) {
       },function (exit) {
         exit.transition()
           .duration(duration)
-          .attr("fill","rgba(0,0,0,0)").remove();
+          .style("opacity",0)
+          .remove();
       });
 
     infoNodes
       .selectAll("circle")
       .data(updateCoursesProgram,course => course.course_number)
       .join("circle")
-      .attr("r", CONFIG.COURSE_NODE.DEFAULT_RADIUS).style("opacity","0").style("stroke-opacity",0)
+      .attr("r", function() {
+        // Larger touch target on mobile/tablet
+        return window.innerWidth < 1024 ? CONFIG.COURSE_NODE.DEFAULT_RADIUS + 4 : CONFIG.COURSE_NODE.DEFAULT_RADIUS;
+      })
+      .attr("fill", "transparent")
+      .attr("stroke", "none")
+      .style("opacity","0")
+      .style("cursor", "pointer")
       .transition()
       .delay(duration).duration(duration)
       .attr("cx",course => xcoord(course.x))
@@ -1067,7 +1188,15 @@ function initializeVisualization(data) {
     infoNodes
       .selectAll("circle")
       .on("mouseover",showCourseInfo)
-      .on("mouseout",hideCourseInfo);
+      .on("mouseout",hideCourseInfo)
+      .on("click touchstart", function(event, d) {
+        // On mobile/tablet, handle touch/click like mouse hover
+        if (window.innerWidth < 1024 && !isTransitioning) {
+          event.preventDefault();
+          event.stopPropagation();
+          showCourseInfo(event, d);
+        }
+      });
 
     requisiteLines
       .selectAll("line")
@@ -1080,18 +1209,20 @@ function initializeVisualization(data) {
           .attr("y2",requisite => ycoord(requisite.requisite_y))
           .attr("stroke","black")
           .attr("opacity",0)
+          .attr("stroke-dasharray", requisite => requisite.requisite_is_co == 1 ? CONFIG.LINES.DASH_ARRAY : null)
           .transition()
           .delay(2*duration).duration(duration)
-          .attr("opacity",requisite => requisite.requisite_is_primary == 1 ? CONFIG.LINES.PRIMARY_VISIBLE_OPACITY : CONFIG.LINES.DEFAULT_OPACITY);
+          .attr("opacity", CONFIG.LINES.PRIMARY_VISIBLE_OPACITY);
       },function (update) {
         update
+          .attr("stroke-dasharray", requisite => requisite.requisite_is_co == 1 ? CONFIG.LINES.DASH_ARRAY : null)
           .transition()
           .delay(duration).duration(duration)
           .attr("x1",requisite => xcoord(requisite.course_x))
           .attr("y1",requisite => ycoord(requisite.course_y))
           .attr("x2",requisite => xcoord(requisite.requisite_x))
           .attr("y2",requisite => ycoord(requisite.requisite_y))
-          .attr("opacity",requisite => requisite.requisite_is_primary == 1 ? CONFIG.LINES.PRIMARY_VISIBLE_OPACITY : CONFIG.LINES.DEFAULT_OPACITY);
+          .attr("opacity", CONFIG.LINES.PRIMARY_VISIBLE_OPACITY);
       },function (exit) {
         exit.transition()
           .duration(duration)
@@ -1146,6 +1277,7 @@ function initializeVisualization(data) {
         
         LEGEND_CONFIG = getResponsiveLegendConfig(width, height);
         createLegend(svg, LEGEND_CONFIG, legendItemsData, width, height);
+        populateHTMLLegend(legendItemsData);
         
         var currentDataSource = hierarchicalLayout && hierarchicalData ? hierarchicalData : data;
         renderProgram(programs[0], [], CONFIG.ANIMATIONS.ZOOM_RESET_DURATION, currentDataSource);
