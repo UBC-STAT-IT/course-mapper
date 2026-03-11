@@ -99,6 +99,7 @@ const CONFIG = {
 var currentDepartment = 'stats';
 var appState = null;
 var isTransitioning = false;
+var isDepartmentTransitioning = false;
 
 function loadDepartmentData(department, isInitialLoad) {
   var dataFile = department === 'stats' ? CONFIG.DATA_FILES.STATS : CONFIG.DATA_FILES.DSCI;
@@ -121,6 +122,7 @@ function loadDepartmentData(department, isInitialLoad) {
 
 function smoothTransition(newData) {
   isTransitioning = true;
+  isDepartmentTransitioning = true;
   
   var programs = newData.programs;
   var programRequirementsHTML = {};
@@ -146,7 +148,8 @@ function smoothTransition(newData) {
       .classed("highlight", i === 0)
       .html(program.name)
       .on("click", function() {
-        if (isTransitioning) return;
+        if (isDepartmentTransitioning) return;
+        
         programNav.selectAll("div").classed("highlight", false);
         d3.select(this).classed("highlight", true);
         appState.currentSelectedProgram = program;
@@ -181,6 +184,7 @@ function smoothTransition(newData) {
   setTimeout(() => {
     appState.fitMapToView(true);
     isTransitioning = false;
+    isDepartmentTransitioning = false;
   }, CONFIG.ANIMATIONS.TRANSITION_DURATION * (CONFIG.TRANSITIONS.ENTER_DELAY_MULTIPLIER + 1) + CONFIG.TRANSITIONS.TRANSITION_BUFFER + 100);
 }
 
@@ -781,7 +785,8 @@ function initializeVisualization(data) {
   
   programs.forEach(function(program){
     programNav.append("div").classed("program",true).html(program.name).on("click",function (event) {
-      if (isTransitioning) return;
+      if (isDepartmentTransitioning) return;
+      
       d3.select("#program-track-nav div.highlight").classed("highlight",false);
       d3.select(this).classed("highlight",true);
       
