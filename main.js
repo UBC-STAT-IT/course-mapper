@@ -45,9 +45,9 @@ const CONFIG = {
   },
   
   LINES: {
-    DEFAULT_OPACITY: 0,
+    DEFAULT_OPACITY: 0.05,
     PRIMARY_VISIBLE_OPACITY: 0.2,
-    HOVER_OPACITY: 1,
+    HOVER_OPACITY: 0.6,
     DASH_ARRAY: "6,4"
   },
   
@@ -84,7 +84,7 @@ const CONFIG = {
   },
   
   HOVER_EFFECTS: {
-    NON_HIGHLIGHTED_OPACITY: 0.3
+    NON_HIGHLIGHTED_OPACITY: 0.05
   },
   
   LEGEND: {
@@ -933,6 +933,7 @@ function initializeVisualization(data) {
       });
     } else {
       requisiteLines.selectAll("line")
+        .attr("opacity", CONFIG.LINES.DEFAULT_OPACITY)
         .filter(requisite => requisite.course_number == course.course_number && directPrereqs.includes(requisite.requisite_number))
         .attr("opacity", CONFIG.LINES.HOVER_OPACITY)
         .attr("stroke-dasharray", function(requisite) {
@@ -1074,19 +1075,10 @@ function initializeVisualization(data) {
     var prerequisiteChain = prereqChainEnabled ? getPrerequisiteChain(course.course_number) : directPrereqs;
     var allCoursesToHide = [course.course_number, ...prerequisiteChain];
     
-    if (prereqChainEnabled) {
-      allCoursesToHide.forEach(courseNum => {
-        requisiteLines
-          .selectAll("line")
-          .filter(requisite => requisite.course_number == courseNum && allCoursesToHide.includes(requisite.requisite_number))
-          .attr("opacity", CONFIG.LINES.PRIMARY_VISIBLE_OPACITY);
-      });
-    } else {
-      requisiteLines
-        .selectAll("line")
-        .filter(requisite => requisite.course_number == course.course_number && directPrereqs.includes(requisite.requisite_number))
-        .attr("opacity", CONFIG.LINES.PRIMARY_VISIBLE_OPACITY);
-    }
+    // On hide, restore all lines to their default visible opacity
+    requisiteLines
+      .selectAll("line")
+      .attr("opacity", CONFIG.LINES.PRIMARY_VISIBLE_OPACITY);
     
     var shouldRemoveBurst = false;
     for (let courseNum of allCoursesToHide) {
