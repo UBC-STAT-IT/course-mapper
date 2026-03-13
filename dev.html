@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/underscore@1.12.0/underscore-min.js"></script>
+  <link rel="stylesheet" type="text/css" href="main.css">
+  <link rel="stylesheet" type="text/css" href="dev.css">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;700&display=swap" rel="stylesheet">
+  <title>Course Mapper – Dev Mode</title>
+</head>
+
+<body>
+  <div id="dashboard">
+    <header id="header">
+      <button id="hamburger-btn" class="hamburger" aria-label="Toggle menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <h2>
+        UBC <span style="margin-left: 15px;"></span>
+        <span id="dept-stats" class="dept-toggle active">Statistics</span>
+        <span class="dept-separator">|</span>
+        <span id="dept-dsci" class="dept-toggle">Data Science</span>
+        <span class="dev-badge">DEV</span>
+      </h2>
+    </header>
+      
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+    <div id="program-track-nav"></div>
+
+    <script id="course-info-template" type="text/template">
+      <h3><%= number %> <%= title %></h3>
+      <p><%= description %></p>
+      <% if (prereqs.length > 0) { %>
+      <h4>Prerequisites</h4>
+      <ul><% _.each(prereqs, function(prereq) { %>
+        <li><%= prereq.description %></li>
+        <% }); %>
+      </ul>
+      <% }; %>
+      <% if (coreqs.length > 0) { %>
+      <h4>Corequisites</h4>
+      <ul><% _.each(coreqs, function(coreq) { %>
+        <li><%= coreq.description %></li>
+        <% }); %>
+      </ul>
+      <% }; %>
+      <% if (notes.length > 0) { %>
+      <h4>Notes</h4>
+      <p><%= notes %></p>
+      <% }; %>
+    </script>
+    <div id="course-info"></div>
+
+    <div id="course-map">
+      <svg></svg>
+      <button id="legend-toggle" class="legend-toggle-btn" aria-label="Toggle legend">
+        <span>Legend</span>
+      </button>
+      <div id="legend-panel" class="legend-panel">
+        <button id="legend-close" class="legend-close-btn" aria-label="Close legend">×</button>
+        <div id="legend-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Developer Utility Panel -->
+  <button id="dev-panel-toggle" class="dev-panel-toggle" aria-label="Open developer panel">Dev Tools</button>
+  <div id="dev-panel" class="dev-panel">
+    <div class="dev-panel-header">
+      <div>
+        <strong>Course Mapper Dev</strong>
+        <div class="dev-subtext">Add / edit courses & requisites visually.</div>
+      </div>
+      <button id="dev-panel-close" aria-label="Close dev panel">×</button>
+    </div>
+
+    <div class="dev-section">
+      <div class="dev-row">
+        <label for="dev-department">Dataset</label>
+        <select id="dev-department">
+          <option value="stats">Statistics</option>
+          <option value="dsci">Data Science</option>
+        </select>
+        <button id="dev-reload-base" class="dev-ghost">Reload base file</button>
+      </div>
+      <div class="dev-row file-row">
+        <label for="dev-import">Import JSON</label>
+        <input type="file" id="dev-import" accept=".json" />
+      </div>
+      <div class="dev-row">
+        <button id="dev-export" class="dev-primary">Download updated JSON</button>
+        <span class="dev-help">Use this to replace the file in <code>data/</code>.</span>
+      </div>
+    </div>
+
+    <div class="dev-section">
+      <h3>Course details</h3>
+      <div class="dev-grid">
+        <label>Course number</label>
+        <input id="dev-course-number" placeholder="e.g., S410" />
+
+        <label>Title</label>
+        <input id="dev-course-title" placeholder="Course title" />
+
+        <label>Credits</label>
+        <input id="dev-course-credits" placeholder="3" />
+
+        <label>Vector</label>
+        <input id="dev-course-vector" placeholder="[3-0-1]" />
+
+        <label>Description</label>
+        <textarea id="dev-course-description" rows="3" placeholder="Short description"></textarea>
+
+        <label>Notes</label>
+        <textarea id="dev-course-notes" rows="2" placeholder="Optional notes"></textarea>
+
+        <label>Equivalent courses</label>
+        <input id="dev-course-equivalencies" placeholder="Comma separated (e.g., M102,M104)" />
+      </div>
+
+      <div class="dev-row">
+        <label>Programs</label>
+        <div class="dev-chip-row" id="dev-program-flags">
+          <label><input type="checkbox" value="1" checked> All Courses</label>
+          <label><input type="checkbox" value="2"> Major</label>
+          <label><input type="checkbox" value="3"> Honours</label>
+          <label><input type="checkbox" value="4"> Minor</label>
+        </div>
+      </div>
+
+      <div class="dev-row">
+        <label>Required (per program)</label>
+        <div class="dev-chip-row" id="dev-required-flags">
+          <label><input type="checkbox" value="1"> P1</label>
+          <label><input type="checkbox" value="2"> P2</label>
+          <label><input type="checkbox" value="3"> P3</label>
+          <label><input type="checkbox" value="4"> P4</label>
+        </div>
+      </div>
+
+      <div class="dev-row">
+        <label for="dev-prereqs">Prerequisites</label>
+        <select id="dev-prereqs" multiple></select>
+      </div>
+
+      <div class="dev-row">
+        <label for="dev-prereq-text">Prerequisite lines (one per line)</label>
+        <textarea id="dev-prereq-text" rows="3" placeholder="e.g.,
+One of STAT 416, STAT 405, or STAT 406
+MATH 200 and STAT 302"></textarea>
+      </div>
+
+      <div class="dev-row">
+        <label for="dev-coreqs">Corequisites</label>
+        <select id="dev-coreqs" multiple></select>
+      </div>
+
+      <div class="dev-row">
+        <label for="dev-coreq-text">Corequisite lines (one per line)</label>
+        <textarea id="dev-coreq-text" rows="3" placeholder="e.g.,
+One of STAT 306 or CPSC 340"></textarea>
+      </div>
+
+      <div class="dev-row">
+        <label for="dev-existing">Load existing course</label>
+        <select id="dev-existing">
+          <option value="">-- New course --</option>
+        </select>
+      </div>
+
+      <div class="dev-actions">
+        <button id="dev-place-course" class="dev-secondary">Place on map</button>
+        <button id="dev-save-course" class="dev-primary">Save / Update course</button>
+      </div>
+      <p class="dev-help">Tip: place the course, drag to adjust position, then save. Use drag mode to move any course.</p>
+    </div>
+
+    <div class="dev-section">
+      <h3>Map helpers</h3>
+      <div class="dev-row switches">
+        <label><input type="checkbox" id="dev-drag-toggle"> Enable drag to move nodes</label>
+        <label><input type="checkbox" id="dev-prereq-chain"> Show prereq chain on hover</label>
+        <label><input type="checkbox" id="dev-grid-toggle" checked> Snap to grid (default)</label>
+      </div>
+      <div class="dev-actions">
+        <button id="dev-fit" class="dev-ghost">Fit map</button>
+        <button id="dev-reset" class="dev-ghost">Reset unsaved changes</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="dev-toast" class="dev-toast" aria-live="polite"></div>
+
+  <footer id="disclaimer-footer">
+    <p>Developer mode: export JSON and replace the file in <code>data/</code>. The public map reads from those files.</p>
+  </footer>
+
+  <script src="main.js"></script>
+  <script src="dev.js"></script>
+</body>
+</html>

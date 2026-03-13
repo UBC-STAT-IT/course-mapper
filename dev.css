@@ -1,0 +1,274 @@
+:root {
+  --dev-bg: #0d1b2a;
+  --dev-surface: #ffffff;
+  --dev-border: #e0e7ff;
+  --dev-accent: #2563eb;
+  --dev-accent-2: #f97316;
+  --dev-muted: #6b7280;
+  --dev-success: #16a34a;
+}
+
+body.dev-mode {
+  background: #f5f7fb;
+}
+
+.dev-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dev-accent-2);
+  color: white;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-left: 10px;
+  letter-spacing: 0.5px;
+}
+
+.dev-panel-toggle {
+  position: fixed;
+  right: 15px;
+  bottom: 60px;
+  padding: 12px 18px;
+  background: var(--dev-accent);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  box-shadow: 0 10px 30px rgba(37, 99, 235, 0.25);
+  cursor: pointer;
+  z-index: 1200;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.dev-panel-toggle:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(37, 99, 235, 0.35);
+}
+
+.dev-panel {
+  position: fixed;
+  right: -420px;
+  top: 0;
+  width: 400px;
+  max-width: 92vw;
+  height: 100vh;
+  background: var(--dev-surface);
+  border-left: 1px solid var(--dev-border);
+  box-shadow: -8px 0 30px rgba(0, 0, 0, 0.1);
+  z-index: 1300;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 18px 20px 18px;
+  gap: 14px;
+  transition: right 0.3s ease;
+  overflow-y: auto;
+}
+
+.dev-panel.active {
+  right: 0;
+}
+
+.dev-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid var(--dev-border);
+  padding-bottom: 10px;
+}
+
+.dev-panel-header button {
+  border: none;
+  background: transparent;
+  font-size: 26px;
+  cursor: pointer;
+  color: var(--dev-muted);
+  padding: 4px 8px;
+}
+
+.dev-subtext {
+  color: var(--dev-muted);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.dev-section {
+  border: 1px solid var(--dev-border);
+  border-radius: 12px;
+  padding: 12px 12px 10px 12px;
+  background: #f9fbff;
+}
+
+.dev-section h3 {
+  margin: 4px 0 10px 0;
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.dev-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.dev-row label {
+  font-weight: 600;
+  font-size: 13px;
+  color: #111827;
+}
+
+.dev-row input,
+.dev-row select,
+.dev-row textarea {
+  flex: 1 1 180px;
+  padding: 8px 10px;
+  border: 1px solid var(--dev-border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: 'Open Sans', sans-serif;
+  background: white;
+}
+
+.dev-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  margin-bottom: 8px;
+}
+
+.dev-grid label {
+  font-weight: 600;
+  font-size: 13px;
+  align-self: center;
+}
+
+.dev-grid input,
+.dev-grid textarea {
+  width: 100%;
+  grid-column: 2;
+  border-radius: 8px;
+  border: 1px solid var(--dev-border);
+  padding: 8px 10px;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.dev-grid textarea {
+  resize: vertical;
+}
+
+.dev-chip-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 6px 8px;
+  background: white;
+  border-radius: 8px;
+  border: 1px dashed var(--dev-border);
+}
+
+.dev-chip-row label {
+  font-weight: 500;
+  color: #1f2937;
+  font-size: 12px;
+}
+
+.dev-row select[multiple] {
+  min-width: 220px;
+  min-height: 90px;
+}
+
+.dev-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.dev-primary,
+.dev-secondary,
+.dev-ghost {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 13px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  transition: transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+.dev-primary {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: white;
+}
+
+.dev-secondary {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: white;
+}
+
+.dev-ghost {
+  background: white;
+  border: 1px solid var(--dev-border);
+  color: #111827;
+  box-shadow: none;
+}
+
+.dev-primary:hover,
+.dev-secondary:hover,
+.dev-ghost:hover {
+  transform: translateY(-1px);
+}
+
+.dev-help {
+  font-size: 12px;
+  color: var(--dev-muted);
+  margin: 6px 0;
+}
+
+.dev-toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  background: #111827;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  transform: translateY(10px);
+  z-index: 1500;
+}
+
+.dev-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.switches label {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.file-row input[type="file"] {
+  padding: 4px;
+}
+
+@media screen and (max-width: 900px) {
+  .dev-grid {
+    grid-template-columns: 1fr;
+  }
+  .dev-grid label {
+    grid-column: 1;
+  }
+  .dev-grid input,
+  .dev-grid textarea {
+    grid-column: 1;
+  }
+}

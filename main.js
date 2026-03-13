@@ -279,6 +279,11 @@ function initializeVisualization(data) {
   var burstEffectsEnabled = true;
   var hierarchicalLayout = false;
 
+  // Expose a tiny dev hook for toggling advanced options
+  window.__courseMapperDev = window.__courseMapperDev || {};
+  window.__courseMapperDev.setPrereqChain = function(enabled) { prereqChainEnabled = !!enabled; };
+  window.__courseMapperDev.setBurstEffects = function(enabled) { burstEffectsEnabled = !!enabled; };
+
   function updateCircleColors() {
     courseNodes.selectAll("circle")
       .attr("fill", function(d) {
@@ -1320,6 +1325,8 @@ function initializeVisualization(data) {
     zoom: zoom,
     renderProgram: renderProgram,
     fitMapToView: fitMapToView,
+    xcoord: xcoord,
+    ycoord: ycoord,
     calculateScaling: function(dataSource, w, h) {
       if (!dataSource || !dataSource.courses_program1) {
         return { xscale: w / CONFIG.SCALING.DEFAULT_X_DIVISOR, yscale: h / CONFIG.SCALING.DEFAULT_Y_DIVISOR, xoffset: w / 2, yoffset: h * CONFIG.SCALING.DEFAULT_Y_OFFSET_MULTIPLIER };
@@ -1350,7 +1357,30 @@ function initializeVisualization(data) {
     },
     currentSelectedProgram: currentSelectedProgram,
     currentSelectedCourse: currentSelectedCourse,
-    programRequirementsHTML: programRequirementsHTML
+    programRequirementsHTML: programRequirementsHTML,
+    screenToData: function(screenX, screenY) {
+      const transform = d3.zoomTransform(svg.node());
+      const localX = (screenX - transform.x) / transform.k;
+      const localY = (screenY - transform.y) / transform.k;
+      return {
+        x: (localX - this.xoffset) / this.xscale,
+        y: (this.yoffset - localY) / this.yscale
+      };
+    },
+    dataToScreen: function(dataX, dataY) {
+      return {
+        x: dataX * this.xscale + this.xoffset,
+        y: this.yoffset - dataY * this.yscale
+      };
+    },
+    layers: {
+      svg: svg,
+      zoomContainer: zoomContainer,
+      requisiteLines: requisiteLines,
+      courseNodes: courseNodes,
+      courseNumbers: courseNumbers,
+      infoNodes: infoNodes
+    }
   };
 }
 
