@@ -99,6 +99,19 @@
     </div>
 
     <div class="dev-section">
+      <h3>Map helpers</h3>
+      <div class="dev-row switches">
+        <label><input type="checkbox" id="dev-drag-toggle"> Enable drag to move nodes</label>
+        <label><input type="checkbox" id="dev-prereq-chain"> Show prereq chain on hover</label>
+        <label><input type="checkbox" id="dev-grid-toggle" checked> Snap to grid (default)</label>
+      </div>
+      <div class="dev-actions">
+        <button id="dev-fit" class="dev-ghost">Fit map</button>
+        <button id="dev-reset" class="dev-ghost">Reset unsaved changes</button>
+      </div>
+    </div>
+
+    <div class="dev-section">
       <h3>Course details</h3>
       <div class="dev-grid">
         <label>Course number</label>
@@ -178,19 +191,6 @@ One of STAT 306 or CPSC 340"></textarea>
         <button id="dev-save-course" class="dev-primary">Save / Update course</button>
       </div>
       <p class="dev-help">Tip: place the course, drag to adjust position, then save. Use drag mode to move any course.</p>
-    </div>
-
-    <div class="dev-section">
-      <h3>Map helpers</h3>
-      <div class="dev-row switches">
-        <label><input type="checkbox" id="dev-drag-toggle"> Enable drag to move nodes</label>
-        <label><input type="checkbox" id="dev-prereq-chain"> Show prereq chain on hover</label>
-        <label><input type="checkbox" id="dev-grid-toggle" checked> Snap to grid (default)</label>
-      </div>
-      <div class="dev-actions">
-        <button id="dev-fit" class="dev-ghost">Fit map</button>
-        <button id="dev-reset" class="dev-ghost">Reset unsaved changes</button>
-      </div>
     </div>
   </div>
 

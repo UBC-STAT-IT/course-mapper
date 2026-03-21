@@ -49,39 +49,121 @@
   function enableClickMultiSelect(selectId) {
     const el = document.getElementById(selectId);
     if (!el) return;
+    let lockedScrollTop = null;
+    let lockTimer = null;
+
+    const releaseLock = () => {
+      lockedScrollTop = null;
+      if (lockTimer) {
+        clearTimeout(lockTimer);
+        lockTimer = null;
+      }
+    };
+
+    const lockScroll = (top) => {
+      lockedScrollTop = top;
+      if (lockTimer) clearTimeout(lockTimer);
+      lockTimer = setTimeout(releaseLock, 120);
+    };
+
+    const restoreScroll = () => {
+      if (lockedScrollTop === null) return;
+      if (el.scrollTop === lockedScrollTop) return;
+      el.scrollTop = lockedScrollTop;
+    };
+
     el.addEventListener('mousedown', (e) => {
       const opt = e.target;
       if (opt && opt.tagName === 'OPTION') {
-        const scrollPos = el.scrollTop;
+        lockScroll(el.scrollTop);
         e.preventDefault();
         opt.selected = !opt.selected;
-        // Restore scroll to avoid jump-to-top
-        requestAnimationFrame(() => {
-          el.scrollTop = scrollPos;
-        });
+        restoreScroll();
       }
     });
+    el.addEventListener('scroll', restoreScroll);
+    el.addEventListener('change', restoreScroll);
+    el.addEventListener('blur', releaseLock);
   }
 
-  function refreshCourseOptions() {
-    const courses = getCourseOptions();
+  function parseCourseNumber(value) {
+    const str = (value || '').toString().trim();
+    const prefix = str.charAt(0).toUpperCase();
+    const numPart = parseInt(str.slice(1), 10);
+    return {
+      prefix,
+      num: Number.isNaN(numPart) ? Number.MAX_SAFE_INTEGER : numPart,
+      raw: str
+    };
+  }
+
+  function compareCourseNumbers(a, b) {
+    const aInfo = parseCourseNumber(a.course_number);
+    const bInfo = parseCourseNumber(b.course_number);
+    if (aInfo.prefix !== bInfo.prefix) {
+      return aInfo.prefix.localeCompare(bInfo.prefix);
+    }
+    if (aInfo.num !== bInfo.num) {
+      return aInfo.num - bInfo.num;
+    }
+    return aInfo.raw.localeCompare(bInfo.raw);
+  }
+
+  function ensureOptionVisible(select, courseNumber) {
+    if (!select || !courseNumber) return;
+    const options = Array.from(select.options);
+    const target = options.find((o) => o.value === courseNumber);
+    if (!target) return;
+    const optionTop = target.offsetTop;
+    const optionBottom = optionTop + target.offsetHeight;
+    if (optionTop < select.scrollTop) {
+      select.scrollTop = optionTop;
+    } else if (optionBottom > select.scrollTop + select.clientHeight) {
+      select.scrollTop = optionBottom - select.clientHeight;
+    }
+  }
+
+  function refreshCourseOptions(focusCourseNumber = '') {
+    const courses = getCourseOptions().slice().sort(compareCourseNumbers);
     const prereqSelect = document.getElementById('dev-prereqs');
     const coreqSelect = document.getElementById('dev-coreqs');
     const existingSelect = document.getElementById('dev-existing');
 
-    const fill = (select) => {
+    const preserveMultiSelect = (select) => {
+      if (!select) return { selected: [], scrollTop: 0 };
+      return {
+        selected: Array.from(select.selectedOptions).map((o) => o.value),
+        scrollTop: select.scrollTop
+      };
+    };
+
+    const fill = (select, prevState) => {
       if (!select) return;
       select.innerHTML = '';
       courses.forEach((c) => {
         const opt = document.createElement('option');
         opt.value = c.course_number;
         opt.textContent = `${c.course_number} — ${c.title}`;
+        if (prevState?.selected?.includes(c.course_number)) {
+          opt.selected = true;
+        }
         select.appendChild(opt);
       });
+      if (prevState) {
+        requestAnimationFrame(() => {
+          select.scrollTop = prevState.scrollTop;
+        });
+      }
     };
 
-    fill(prereqSelect);
-    fill(coreqSelect);
+    const prereqState = preserveMultiSelect(prereqSelect);
+    const coreqState = preserveMultiSelect(coreqSelect);
+
+    fill(prereqSelect, prereqState);
+    fill(coreqSelect, coreqState);
+
+    ensureOptionVisible(prereqSelect, focusCourseNumber);
+    ensureOptionVisible(coreqSelect, focusCourseNumber);
 
     if (existingSelect) {
       existingSelect.innerHTML = '<option value="">-- New course --</option>';
@@ -91,6 +173,9 @@
         opt.textContent = c.course_number;
         existingSelect.appendChild(opt);
       });
+      if (focusCourseNumber) {
+        existingSelect.value = focusCourseNumber;
+      }
     }
   }
 
@@ -577,10 +662,15 @@
 
     appState.data = devState.workingData;
     appState.programRequirementsHTML = programRequirementsHTML;
-    appState.currentSelectedProgram = devState.workingData.programs ? devState.workingData.programs[0] : { program_id: 1, name: 'All Courses' };
+
+    const programs = devState.workingData.programs || [];
+    const preservedId = appState.currentSelectedProgram?.program_id;
+    const fallbackProgram = programs[0] || { program_id: 1, name: 'All Courses' };
+    const selectedProgram = programs.find((p) => p.program_id === preservedId) || fallbackProgram;
+    appState.currentSelectedProgram = selectedProgram;
 
     // Render with latest data
-    appState.renderProgram(appState.currentSelectedProgram, [], animate ? CONFIG.ANIMATIONS.TRANSITION_DURATION : 0, devState.workingData);
+    appState.renderProgram(selectedProgram, [], animate ? CONFIG.ANIMATIONS.TRANSITION_DURATION : 0, devState.workingData);
     currentDepartment = devState.currentDept;
 
     setTimeout(() => {
@@ -592,8 +682,39 @@
       } else {
         document.body.classList.remove('drag-mode');
       }
+      rebuildProgramNav();
       updateGridOverlay();
     }, animate ? CONFIG.ANIMATIONS.POST_TRANSITION_FIT_DELAY / 4 : 50);
+  }
+
+  function rebuildProgramNav() {
+    if (!devState.workingData) return;
+    const programNav = d3.select('#program-track-nav');
+    const courseInfoDiv = d3.select('#course-info');
+    const programs = devState.workingData.programs || [];
+    const selectedId = appState?.currentSelectedProgram?.program_id;
+
+    programNav.html('');
+    programs.forEach((program, index) => {
+      programNav.append('div')
+        .classed('program', true)
+        .classed('highlight', program.program_id === selectedId || (!selectedId && index === 0))
+        .html(program.name)
+        .on('click', function() {
+          if (isDepartmentTransitioning) return;
+          programNav.selectAll('div').classed('highlight', false);
+          d3.select(this).classed('highlight', true);
+          if (appState) appState.currentSelectedProgram = program;
+          appState?.renderProgram(program, [], CONFIG.ANIMATIONS.TRANSITION_DURATION, devState.workingData);
+          if (appState?.programRequirementsHTML?.[program.program_id]) {
+            courseInfoDiv.html(appState.programRequirementsHTML[program.program_id]);
+          }
+        });
+    });
+
+    if (appState?.programRequirementsHTML?.[selectedId]) {
+      courseInfoDiv.html(appState.programRequirementsHTML[selectedId]);
+    }
   }
 
   // ---------- Drag handling ----------
@@ -677,14 +798,15 @@
     removeExistingRequisites(payload.number);
   addRequisites(payload.number, payload.prereqs, payload.coreqs, coords, payload.prereqTextLines, payload.coreqTextLines);
     applyWorkingData(false, { refit: false });
-    refreshCourseOptions();
+    refreshCourseOptions(payload.number);
     toast('Course placed. Drag to adjust, then save.');
   }
 
-  function saveCourse() {
+  function saveCourse(options = {}) {
+    const { skipRefresh = false, silent = false } = options;
     const payload = getFormPayload();
     if (!payload.number) {
-      toast('Course number is required');
+      if (!silent) toast('Course number is required');
       return;
     }
     const coords = getCoordsForCourse(payload.number);
@@ -692,8 +814,12 @@
     removeExistingRequisites(payload.number);
   addRequisites(payload.number, payload.prereqs, payload.coreqs, coords, payload.prereqTextLines, payload.coreqTextLines);
     applyWorkingData(false, { refit: false });
-    refreshCourseOptions();
-    toast(`Saved ${payload.number}`);
+    if (!skipRefresh) {
+      refreshCourseOptions(payload.number);
+    }
+    if (!silent) {
+      toast(`Saved ${payload.number}`);
+    }
   }
 
   function resetWorkingData() {
@@ -815,7 +941,7 @@
     const courseNumberInput = document.getElementById('dev-course-number');
     const autoSaveRequisites = () => {
       if (!courseNumberInput?.value.trim()) return;
-      saveCourse();
+      saveCourse({ skipRefresh: true, silent: true });
     };
     prereqSelect?.addEventListener('change', autoSaveRequisites);
     coreqSelect?.addEventListener('change', autoSaveRequisites);

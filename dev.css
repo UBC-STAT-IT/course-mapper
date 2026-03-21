@@ -19,10 +19,14 @@ body.dev-mode {
   background: var(--dev-accent-2);
   color: white;
   font-size: 11px;
-  padding: 2px 8px;
+  height: 18px;
+  line-height: 18px;
+  padding: 0 8px;
   border-radius: 999px;
   margin-left: 10px;
   letter-spacing: 0.5px;
+  vertical-align: middle;
+  transform: translateY(-1px);
 }
 
 .dev-panel-toggle {
@@ -59,7 +63,8 @@ body.dev-mode {
   z-index: 1300;
   display: flex;
   flex-direction: column;
-  padding: 16px 18px 20px 18px;
+  box-sizing: border-box;
+  padding: 0 18px 48px 18px;
   gap: 14px;
   transition: right 0.3s ease;
   overflow-y: auto;
@@ -70,12 +75,16 @@ body.dev-mode {
 }
 
 .dev-panel-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--dev-surface);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   border-bottom: 1px solid var(--dev-border);
-  padding-bottom: 10px;
+  padding: 16px 0 10px 0;
 }
 
 .dev-panel-header button {

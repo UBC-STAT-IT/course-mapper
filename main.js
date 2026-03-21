@@ -39,8 +39,8 @@ const CONFIG = {
   },
   
   TRANSITIONS: {
-    ENTER_DELAY_MULTIPLIER: 2,
-    UPDATE_DELAY_MULTIPLIER: 1,
+    ENTER_DELAY_MULTIPLIER: 0,
+    UPDATE_DELAY_MULTIPLIER: 0,
     TRANSITION_BUFFER: 100
   },
   
@@ -1116,7 +1116,7 @@ function initializeVisualization(data) {
       }, duration * (CONFIG.TRANSITIONS.ENTER_DELAY_MULTIPLIER + 1) + CONFIG.TRANSITIONS.TRANSITION_BUFFER);
     }
     
-    var currentData = dataSource || data;
+    var currentData = dataSource || (appState && appState.data ? appState.data : data);
 
     var updateCoursesProgram = currentData["courses_program" + program.program_id];
     var updateRequisitesProgram = currentData.requisites_programs || currentData["requisites_program" + program.program_id];
@@ -1134,7 +1134,7 @@ function initializeVisualization(data) {
           .attr("cx",course => xcoord(course.x))
           .attr("cy",course => ycoord(course.y))
           .transition()
-          .delay(2*duration).duration(duration)
+          .delay(duration * CONFIG.TRANSITIONS.ENTER_DELAY_MULTIPLIER).duration(duration)
           .style("opacity",1)
           .attr("fill",course => getCourseColor(course.course_number, course.required, courseList.includes(course.course_number)))
           .attr("stroke",course => getCourseStrokeColor(course.course_number, course.required, courseList.includes(course.course_number)))
@@ -1144,8 +1144,9 @@ function initializeVisualization(data) {
           .attr("fill",course => getCourseColor(course.course_number, course.required, courseList.includes(course.course_number)))
           .attr("stroke",course => getCourseStrokeColor(course.course_number, course.required, courseList.includes(course.course_number)))
           .attr("stroke-width", CONFIG.COURSE_NODE.STROKE_WIDTH)
+          .style("opacity", 1)
           .transition()
-          .delay(duration).duration(duration)
+          .delay(duration * CONFIG.TRANSITIONS.UPDATE_DELAY_MULTIPLIER).duration(duration)
           .attr("cx",course => xcoord(course.x))
           .attr("cy",course => ycoord(course.y));
       },function (exit) {
@@ -1170,13 +1171,14 @@ function initializeVisualization(data) {
           .style("opacity",0)
           .text(d => getNumericPart(d.course_number))
           .transition()
-          .delay(2*duration).duration(duration)
+          .delay(duration * CONFIG.TRANSITIONS.ENTER_DELAY_MULTIPLIER).duration(duration)
           .style("opacity",1);
       },function (update) {
         update
           .attr("fill",course => (course.required || courseList.includes(course.course_number)) ? "white" : "black")
+          .style("opacity", 1)
           .transition()
-          .delay(duration).duration(duration)
+          .delay(duration * CONFIG.TRANSITIONS.UPDATE_DELAY_MULTIPLIER).duration(duration)
           .attr("x",course => xcoord(course.x))
           .attr("y",course => ycoord(course.y));
       },function (exit) {
@@ -1199,7 +1201,7 @@ function initializeVisualization(data) {
       .style("opacity","0")
       .style("cursor", "pointer")
       .transition()
-      .delay(duration).duration(duration)
+      .delay(duration * CONFIG.TRANSITIONS.UPDATE_DELAY_MULTIPLIER).duration(duration)
       .attr("cx",course => xcoord(course.x))
       .attr("cy",course => ycoord(course.y));
 
@@ -1236,13 +1238,13 @@ function initializeVisualization(data) {
           .attr("opacity",0)
           .attr("stroke-dasharray", requisite => requisite.requisite_is_co == 1 ? CONFIG.LINES.DASH_ARRAY : null)
           .transition()
-          .delay(2*duration).duration(duration)
+          .delay(duration * CONFIG.TRANSITIONS.ENTER_DELAY_MULTIPLIER).duration(duration)
           .attr("opacity", CONFIG.LINES.PRIMARY_VISIBLE_OPACITY);
       },function (update) {
         update
           .attr("stroke-dasharray", requisite => requisite.requisite_is_co == 1 ? CONFIG.LINES.DASH_ARRAY : null)
           .transition()
-          .delay(duration).duration(duration)
+          .delay(duration * CONFIG.TRANSITIONS.UPDATE_DELAY_MULTIPLIER).duration(duration)
           .attr("x1",requisite => xcoord(requisite.course_x))
           .attr("y1",requisite => ycoord(requisite.course_y))
           .attr("x2",requisite => xcoord(requisite.requisite_x))
