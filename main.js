@@ -179,9 +179,6 @@ function smoothTransition(newData) {
   appState.currentSelectedProgram = programs[0];
   appState.programRequirementsHTML = programRequirementsHTML;
   
-  var svg = d3.select("#course-map svg");
-  svg.transition().duration(CONFIG.ANIMATIONS.ZOOM_RESET_DURATION).call(appState.zoom.transform, d3.zoomIdentity);
-  
   appState.renderProgram(programs[0], [], CONFIG.ANIMATIONS.TRANSITION_DURATION, newData);
   
   setTimeout(() => {
@@ -204,6 +201,10 @@ function initializeVisualization(data) {
 
   var width = parseInt(d3.select("#course-map").style("width"));
   var height = parseInt(d3.select("#course-map").style("height")) - CONFIG.LAYOUT.CANVAS_HEIGHT_OFFSET;
+
+  function isMobileView() {
+    return window.innerWidth < 768;
+  }
   
   function calculateScaling(dataSource) {
     if (!dataSource || !dataSource.courses_program1) {
@@ -237,8 +238,11 @@ function initializeVisualization(data) {
     const usableWidth = width * (1 - padding);
     const usableHeight = height * (1 - padding);
     
-    const xs = xRange > 0 ? usableWidth / xRange : width / CONFIG.SCALING.DEFAULT_X_DIVISOR;
-    const ys = yRange > 0 ? usableHeight / yRange : height / CONFIG.SCALING.DEFAULT_Y_DIVISOR;
+    const mobileScaleBoost = window.innerWidth < 768
+      ? (currentDepartment === 'dsci' ? 1.6 : 1.4)
+      : 1;
+    const xs = (xRange > 0 ? usableWidth / xRange : width / CONFIG.SCALING.DEFAULT_X_DIVISOR) * mobileScaleBoost;
+    const ys = (yRange > 0 ? usableHeight / yRange : height / CONFIG.SCALING.DEFAULT_Y_DIVISOR) * mobileScaleBoost;
     
     const centerX = (minX + maxX) / 2;
     const centerY = (minY + maxY) / 2;
@@ -247,7 +251,7 @@ function initializeVisualization(data) {
       xscale: xs,
       yscale: ys,
       xoffset: width / 2 - centerX * xs,
-      yoffset: height / 2 + centerY * ys
+      yoffset: isMobileView() ? height / 2 - centerY * ys : height / 2 + centerY * ys
     };
   }
   
@@ -265,9 +269,9 @@ function initializeVisualization(data) {
   }
   function ycoord(y) { 
     if (appState && appState.yscale !== undefined) {
-      return appState.yoffset - y * appState.yscale;
+      return isMobileView() ? y * appState.yscale + appState.yoffset : appState.yoffset - y * appState.yscale;
     }
-    return yoffset - y * yscale; 
+    return isMobileView() ? y * yscale + yoffset : yoffset - y * yscale; 
   }
   
   var svg = d3.select("#course-map svg").attr("width",width).attr("height",height);
@@ -1398,15 +1402,18 @@ function initializeVisualization(data) {
       const padding = CONFIG.SCALING.PADDING_RATIO;
       const usableWidth = w * (1 - padding);
       const usableHeight = h * (1 - padding);
-      const xs = xRange > 0 ? usableWidth / xRange : w / CONFIG.SCALING.DEFAULT_X_DIVISOR;
-      const ys = yRange > 0 ? usableHeight / yRange : h / CONFIG.SCALING.DEFAULT_Y_DIVISOR;
+      const mobileScaleBoost = window.innerWidth < 768
+        ? (currentDepartment === 'dsci' ? 1.6 : 1.4)
+        : 1;
+      const xs = (xRange > 0 ? usableWidth / xRange : w / CONFIG.SCALING.DEFAULT_X_DIVISOR) * mobileScaleBoost;
+      const ys = (yRange > 0 ? usableHeight / yRange : h / CONFIG.SCALING.DEFAULT_Y_DIVISOR) * mobileScaleBoost;
       const centerX = (minX + maxX) / 2;
       const centerY = (minY + maxY) / 2;
       return {
         xscale: xs,
         yscale: ys,
         xoffset: w / 2 - centerX * xs,
-        yoffset: h / 2 + centerY * ys
+        yoffset: isMobileView() ? h / 2 - centerY * ys : h / 2 + centerY * ys
       };
     },
     currentSelectedProgram: currentSelectedProgram,
@@ -1418,13 +1425,13 @@ function initializeVisualization(data) {
       const localY = (screenY - transform.y) / transform.k;
       return {
         x: (localX - this.xoffset) / this.xscale,
-        y: (this.yoffset - localY) / this.yscale
+        y: isMobileView() ? (localY - this.yoffset) / this.yscale : (this.yoffset - localY) / this.yscale
       };
     },
     dataToScreen: function(dataX, dataY) {
       return {
         x: dataX * this.xscale + this.xoffset,
-        y: this.yoffset - dataY * this.yscale
+        y: isMobileView() ? dataY * this.yscale + this.yoffset : this.yoffset - dataY * this.yscale
       };
     },
     layers: {
