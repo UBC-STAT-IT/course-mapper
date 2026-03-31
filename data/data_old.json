@@ -1077,7 +1077,7 @@
     },
     {
       "course_number": "S201",
-      "x": 1.5,
+      "x": 2,
       "y": 3,
       "required": 0
     },
@@ -1089,7 +1089,7 @@
     },
     {
       "course_number": "S251",
-      "x": 2.5,
+      "x": 2,
       "y": 6,
       "required": 0
     },
@@ -1132,13 +1132,13 @@
     {
       "course_number": "S344",
       "x": 0,
-      "y": 13,
+      "y": 12,
       "required": 0
     },
     {
       "course_number": "S404",
       "x": 0,
-      "y": 22,
+      "y": 18,
       "required": 0
     },
     {
@@ -1155,8 +1155,8 @@
     },
     {
       "course_number": "S416",
-      "x": -2.5,
-      "y": 15,
+      "x": -6,
+      "y": 18,
       "required": 0
     },
     {
@@ -1167,26 +1167,26 @@
     },
     {
       "course_number": "S445",
-      "x": 0,
-      "y": 16,
+      "x": 4,
+      "y": 18,
       "required": 0
     },
     {
       "course_number": "S449",
       "x": 0,
-      "y": 25,
+      "y": 24,
       "required": 0
     },
     {
       "course_number": "S450",
-      "x": 2.5,
-      "y": 15,
+      "x": 6,
+      "y": 18,
       "required": 0
     },
     {
       "course_number": "S460",
-      "x": 0,
-      "y": 19,
+      "x": -4,
+      "y": 18,
       "required": 0
     },
     {
@@ -1203,19 +1203,19 @@
     },
     {
       "course_number": "M101",
-      "x": -3,
+      "x": -4,
       "y": 3,
       "required": 0
     },
     {
       "course_number": "M200",
-      "x": -2.5,
+      "x": -2,
       "y": 6,
       "required": 0
     },
     {
       "course_number": "M221",
-      "x": -1.5,
+      "x": -2,
       "y": 3,
       "required": 0
     },
@@ -1233,7 +1233,7 @@
     },
     {
       "course_number": "D200",
-      "x": 3,
+      "x": 4,
       "y": 3,
       "required": 0
     }
@@ -1247,7 +1247,7 @@
     },
     {
       "course_number": "S201",
-      "x": 1.5,
+      "x": 2,
       "y": 3,
       "required": 1
     },
@@ -1259,7 +1259,7 @@
     },
     {
       "course_number": "S251",
-      "x": 2.5,
+      "x": 2,
       "y": 6,
       "required": 0
     },
@@ -1302,13 +1302,13 @@
     {
       "course_number": "S344",
       "x": 0,
-      "y": 13,
+      "y": 12,
       "required": 0
     },
     {
       "course_number": "S404",
       "x": 0,
-      "y": 22,
+      "y": 18,
       "required": 1
     },
     {
@@ -1325,8 +1325,8 @@
     },
     {
       "course_number": "S416",
-      "x": -2.5,
-      "y": 15,
+      "x": -6,
+      "y": 18,
       "required": 0
     },
     {
@@ -1337,26 +1337,26 @@
     },
     {
       "course_number": "S445",
-      "x": 0,
-      "y": 16,
+      "x": 4,
+      "y": 18,
       "required": 0
     },
     {
       "course_number": "S449",
       "x": 0,
-      "y": 25,
+      "y": 24,
       "required": 0
     },
     {
       "course_number": "S450",
-      "x": 2.5,
-      "y": 15,
+      "x": 6,
+      "y": 18,
       "required": 0
     },
     {
       "course_number": "S460",
-      "x": 0,
-      "y": 19,
+      "x": -4,
+      "y": 18,
       "required": 0
     },
     {
@@ -1373,19 +1373,19 @@
     },
     {
       "course_number": "M101",
-      "x": -3,
+      "x": -4,
       "y": 3,
       "required": 1
     },
     {
       "course_number": "M200",
-      "x": -2.5,
+      "x": -2,
       "y": 6,
       "required": 1
     },
     {
       "course_number": "M221",
-      "x": -1.5,
+      "x": -2,
       "y": 3,
       "required": 1
     },
@@ -1403,7 +1403,7 @@
     },
     {
       "course_number": "D200",
-      "x": 3,
+      "x": 4,
       "y": 3,
       "required": 0
     }
@@ -1417,7 +1417,7 @@
     },
     {
       "course_number": "S201",
-      "x": 1.5,
+      "x": 2,
       "y": 3,
       "required": 1
     },
@@ -1429,7 +1429,7 @@
     },
     {
       "course_number": "S251",
-      "x": 2.5,
+      "x": 2,
       "y": 6,
       "required": 0
     },
@@ -1472,13 +1472,13 @@
     {
       "course_number": "S344",
       "x": 0,
-      "y": 13,
+      "y": 12,
       "required": 0
     },
     {
       "course_number": "S404",
       "x": 0,
-      "y": 22,
+      "y": 18,
       "required": 1
     },
     {
@@ -1495,8 +1495,8 @@
     },
     {
       "course_number": "S416",
-      "x": -2.5,
-      "y": 15,
+      "x": -6,
+      "y": 18,
       "required": 0
     },
     {
@@ -1507,26 +1507,26 @@
     },
     {
       "course_number": "S445",
-      "x": 0,
-      "y": 16,
+      "x": 4,
+      "y": 18,
       "required": 0
     },
     {
       "course_number": "S449",
       "x": 0,
-      "y": 25,
+      "y": 24,
       "required": 0
     },
     {
       "course_number": "S450",
-      "x": 2.5,
-      "y": 15,
+      "x": 6,
+      "y": 18,
       "required": 0
     },
     {
       "course_number": "S460",
-      "x": 0,
-      "y": 19,
+      "x": -4,
+      "y": 18,
       "required": 1
     },
     {
@@ -1543,19 +1543,19 @@
     },
     {
       "course_number": "M101",
-      "x": -3,
+      "x": -4,
       "y": 3,
       "required": 1
     },
     {
       "course_number": "M200",
-      "x": -2.5,
+      "x": -2,
       "y": 6,
       "required": 1
     },
     {
       "course_number": "M221",
-      "x": -1.5,
+      "x": -2,
       "y": 3,
       "required": 1
     },
@@ -1573,7 +1573,7 @@
     },
     {
       "course_number": "D200",
-      "x": 3,
+      "x": 4,
       "y": 3,
       "required": 0
     }
@@ -1587,7 +1587,7 @@
     },
     {
       "course_number": "S201",
-      "x": 1.5,
+      "x": 2,
       "y": 3,
       "required": 0
     },
@@ -1599,7 +1599,7 @@
     },
     {
       "course_number": "S251",
-      "x": 2.5,
+      "x": 2,
       "y": 6,
       "required": 0
     },
@@ -1642,13 +1642,13 @@
     {
       "course_number": "S344",
       "x": 0,
-      "y": 13,
+      "y": 12,
       "required": 0
     },
     {
       "course_number": "S404",
       "x": 0,
-      "y": 22,
+      "y": 18,
       "required": 0
     },
     {
@@ -1665,8 +1665,8 @@
     },
     {
       "course_number": "S416",
-      "x": -2.5,
-      "y": 15,
+      "x": -6,
+      "y": 18,
       "required": 0
     },
     {
@@ -1677,26 +1677,26 @@
     },
     {
       "course_number": "S445",
-      "x": 0,
-      "y": 16,
+      "x": 4,
+      "y": 18,
       "required": 0
     },
     {
       "course_number": "S449",
       "x": 0,
-      "y": 25,
+      "y": 24,
       "required": 0
     },
     {
       "course_number": "S450",
-      "x": 2.5,
-      "y": 15,
+      "x": 6,
+      "y": 18,
       "required": 0
     },
     {
       "course_number": "S460",
-      "x": 0,
-      "y": 19,
+      "x": -4,
+      "y": 18,
       "required": 0
     },
     {
@@ -1713,19 +1713,19 @@
     },
     {
       "course_number": "M101",
-      "x": -3,
+      "x": -4,
       "y": 3,
       "required": 0
     },
     {
       "course_number": "M200",
-      "x": -2.5,
+      "x": -2,
       "y": 6,
       "required": 0
     },
     {
       "course_number": "M221",
-      "x": -1.5,
+      "x": -2,
       "y": 3,
       "required": 0
     },
@@ -1743,7 +1743,7 @@
     },
     {
       "course_number": "D200",
-      "x": 3,
+      "x": 4,
       "y": 3,
       "required": 0
     }
@@ -1765,7 +1765,7 @@
       "requisite_id": 2,
       "course_number": "S201",
       "requisite_number": "D100",
-      "course_x": 1.5,
+      "course_x": 2,
       "course_y": 3,
       "requisite_x": 2,
       "requisite_y": 0,
@@ -1777,9 +1777,9 @@
       "requisite_id": 4,
       "course_number": "S251",
       "requisite_number": "M101",
-      "course_x": 2.5,
+      "course_x": 2,
       "course_y": 6,
-      "requisite_x": -3,
+      "requisite_x": -4,
       "requisite_y": 3,
       "requisite_is_primary": 1,
       "requisite_is_co": 0,
@@ -1815,7 +1815,7 @@
       "requisite_number": "S251",
       "course_x": 1,
       "course_y": 9,
-      "requisite_x": 2.5,
+      "requisite_x": 2,
       "requisite_y": 6,
       "requisite_is_primary": 0,
       "requisite_is_co": 0,
@@ -1827,7 +1827,7 @@
       "requisite_number": "S201",
       "course_x": 0,
       "course_y": 6,
-      "requisite_x": 1.5,
+      "requisite_x": 2,
       "requisite_y": 3,
       "requisite_is_primary": 1,
       "requisite_is_co": 0,
@@ -1875,7 +1875,7 @@
       "requisite_number": "S251",
       "course_x": -2,
       "course_y": 12,
-      "requisite_x": 2.5,
+      "requisite_x": 2,
       "requisite_y": 6,
       "requisite_is_primary": 0,
       "requisite_is_co": 0,
@@ -1899,7 +1899,7 @@
       "requisite_number": "S201",
       "course_x": -2,
       "course_y": 12,
-      "requisite_x": 1.5,
+      "requisite_x": 2,
       "requisite_y": 3,
       "requisite_is_primary": 1,
       "requisite_is_co": 0,
@@ -1911,7 +1911,7 @@
       "requisite_number": "D200",
       "course_x": -2,
       "course_y": 12,
-      "requisite_x": 3,
+      "requisite_x": 4,
       "requisite_y": 3,
       "requisite_is_primary": 1,
       "requisite_is_co": 0,
@@ -1923,7 +1923,7 @@
       "requisite_number": "M221",
       "course_x": 2,
       "course_y": 12,
-      "requisite_x": -1.5,
+      "requisite_x": -2,
       "requisite_y": 3,
       "requisite_is_primary": 1,
       "requisite_is_co": 0,
@@ -1947,7 +1947,7 @@
       "requisite_number": "S251",
       "course_x": 2,
       "course_y": 12,
-      "requisite_x": 2.5,
+      "requisite_x": 2,
       "requisite_y": 6,
       "requisite_is_primary": 0,
       "requisite_is_co": 0,
@@ -1995,7 +1995,7 @@
       "requisite_number": "S251",
       "course_x": 3,
       "course_y": 9,
-      "requisite_x": 2.5,
+      "requisite_x": 2,
       "requisite_y": 6,
       "requisite_is_primary": 0,
       "requisite_is_co": 0,
@@ -2006,7 +2006,7 @@
       "course_number": "S344",
       "requisite_number": "S200",
       "course_x": 0,
-      "course_y": 13,
+      "course_y": 12,
       "requisite_x": 0,
       "requisite_y": 3,
       "requisite_is_primary": 1,
@@ -2018,8 +2018,8 @@
       "course_number": "S344",
       "requisite_number": "S251",
       "course_x": 0,
-      "course_y": 13,
-      "requisite_x": 2.5,
+      "course_y": 12,
+      "requisite_x": 2,
       "requisite_y": 6,
       "requisite_is_primary": 0,
       "requisite_is_co": 0,
@@ -2030,7 +2030,7 @@
       "course_number": "S344",
       "requisite_number": "S302",
       "course_x": 0,
-      "course_y": 13,
+      "course_y": 12,
       "requisite_x": -1,
       "requisite_y": 9,
       "requisite_is_primary": 1,
@@ -2042,7 +2042,7 @@
       "course_number": "S404",
       "requisite_number": "S305",
       "course_x": 0,
-      "course_y": 22,
+      "course_y": 18,
       "requisite_x": -2,
       "requisite_y": 12,
       "requisite_is_primary": 1,
@@ -2054,8 +2054,8 @@
       "course_number": "S404",
       "requisite_number": "M221",
       "course_x": 0,
-      "course_y": 22,
-      "requisite_x": -1.5,
+      "course_y": 18,
+      "requisite_x": -2,
       "requisite_y": 3,
       "requisite_is_primary": 1,
       "requisite_is_co": 0,
@@ -2066,7 +2066,7 @@
       "course_number": "S404",
       "requisite_number": "S306",
       "course_x": 0,
-      "course_y": 22,
+      "course_y": 18,
       "requisite_x": 2,
       "requisite_y": 12,
       "requisite_is_primary": 1,
@@ -2103,8 +2103,8 @@
       "requisite_number": "S460",
       "course_x": 1,
       "course_y": 21,
-      "requisite_x": 0,
-      "requisite_y": 19,
+      "requisite_x": -4,
+      "requisite_y": 18,
       "requisite_is_primary": 0,
       "requisite_is_co": 0,
       "course_requisite_number": "S405S460"
@@ -2139,7 +2139,7 @@
       "requisite_number": "M221",
       "course_x": 2,
       "course_y": 18,
-      "requisite_x": -1.5,
+      "requisite_x": -2,
       "requisite_y": 3,
       "requisite_is_primary": 1,
       "requisite_is_co": 0,
@@ -2187,7 +2187,7 @@
       "requisite_number": "S251",
       "course_x": -2,
       "course_y": 18,
-      "requisite_x": 2.5,
+      "requisite_x": 2,
       "requisite_y": 6,
       "requisite_is_primary": 0,
       "requisite_is_co": 0,
@@ -2221,8 +2221,8 @@
       "requisite_id": 27,
       "course_number": "S445",
       "requisite_number": "S306",
-      "course_x": 0,
-      "course_y": 16,
+      "course_x": 4,
+      "course_y": 18,
       "requisite_x": 2,
       "requisite_y": 12,
       "requisite_is_primary": 1,
@@ -2233,8 +2233,8 @@
       "requisite_id": 30,
       "course_number": "S450",
       "requisite_number": "S306",
-      "course_x": 2.5,
-      "course_y": 15,
+      "course_x": 6,
+      "course_y": 18,
       "requisite_x": 2,
       "requisite_y": 12,
       "requisite_is_primary": 1,
@@ -2245,8 +2245,8 @@
       "requisite_id": 31,
       "course_number": "S460",
       "requisite_number": "M320",
-      "course_x": 0,
-      "course_y": 19,
+      "course_x": -4,
+      "course_y": 18,
       "requisite_x": -3,
       "requisite_y": 9,
       "requisite_is_primary": 1,
@@ -2257,8 +2257,8 @@
       "requisite_id": 32,
       "course_number": "S460",
       "requisite_number": "S305",
-      "course_x": 0,
-      "course_y": 19,
+      "course_x": -4,
+      "course_y": 18,
       "requisite_x": -2,
       "requisite_y": 12,
       "requisite_is_primary": 1,
@@ -2269,9 +2269,9 @@
       "requisite_id": 33,
       "course_number": "S460",
       "requisite_number": "M221",
-      "course_x": 0,
-      "course_y": 19,
-      "requisite_x": -1.5,
+      "course_x": -4,
+      "course_y": 18,
+      "requisite_x": -2,
       "requisite_y": 3,
       "requisite_is_primary": 1,
       "requisite_is_co": 0,
@@ -2283,8 +2283,8 @@
       "requisite_number": "S460",
       "course_x": -1,
       "course_y": 21,
-      "requisite_x": 0,
-      "requisite_y": 19,
+      "requisite_x": -4,
+      "requisite_y": 18,
       "requisite_is_primary": 1,
       "requisite_is_co": 0,
       "course_requisite_number": "S461S460"
@@ -2293,7 +2293,7 @@
       "requisite_id": 36,
       "course_number": "M101",
       "requisite_number": "M100",
-      "course_x": -3,
+      "course_x": -4,
       "course_y": 3,
       "requisite_x": -2,
       "requisite_y": 0,
@@ -2305,9 +2305,9 @@
       "requisite_id": 37,
       "course_number": "M200",
       "requisite_number": "M101",
-      "course_x": -2.5,
+      "course_x": -2,
       "course_y": 6,
-      "requisite_x": -3,
+      "requisite_x": -4,
       "requisite_y": 3,
       "requisite_is_primary": 1,
       "requisite_is_co": 0,
@@ -2317,7 +2317,7 @@
       "requisite_id": 38,
       "course_number": "M221",
       "requisite_number": "M100",
-      "course_x": -1.5,
+      "course_x": -2,
       "course_y": 3,
       "requisite_x": -2,
       "requisite_y": 0,
@@ -2331,7 +2331,7 @@
       "requisite_number": "M200",
       "course_x": -3,
       "course_y": 9,
-      "requisite_x": -2.5,
+      "requisite_x": -2,
       "requisite_y": 6,
       "requisite_is_primary": 1,
       "requisite_is_co": 0,
@@ -2341,7 +2341,7 @@
       "requisite_id": 41,
       "course_number": "D200",
       "requisite_number": "D100",
-      "course_x": 3,
+      "course_x": 4,
       "course_y": 3,
       "requisite_x": 2,
       "requisite_y": 0,
@@ -2353,8 +2353,8 @@
       "requisite_id": 42,
       "course_number": "S416",
       "requisite_number": "S305",
-      "course_x": -2.5,
-      "course_y": 15,
+      "course_x": -6,
+      "course_y": 18,
       "requisite_x": -2,
       "requisite_y": 12,
       "requisite_is_primary": 1,
@@ -2365,8 +2365,8 @@
       "requisite_id": 43,
       "course_number": "S416",
       "requisite_number": "S306",
-      "course_x": -2.5,
-      "course_y": 15,
+      "course_x": -6,
+      "course_y": 18,
       "requisite_x": 2,
       "requisite_y": 12,
       "requisite_is_primary": 1,

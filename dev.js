@@ -864,20 +864,24 @@
   }
 
   async function loadDataset(dept, resetBase = true) {
-    devState.currentDept = dept;
-    syncDeptUI();
-    const data = await d3.json(DEV_DATA_FILES[dept]);
-    devState.workingData = deepClone(data);
-    if (resetBase) {
-      devState.baseData = deepClone(data);
-      devState.baseGridSize = computeGridStep(devState.baseData);
-      devState.gridSize = devState.baseGridSize;
-    } else {
-      devState.gridSize = devState.baseGridSize || computeGridStep(devState.workingData);
+    try {
+      const data = await d3.json(DEV_DATA_FILES[dept]);
+      devState.currentDept = dept;
+      syncDeptUI();
+      devState.workingData = deepClone(data);
+      if (resetBase) {
+        devState.baseData = deepClone(data);
+        devState.baseGridSize = computeGridStep(devState.baseData);
+        devState.gridSize = devState.baseGridSize;
+      } else {
+        devState.gridSize = devState.baseGridSize || computeGridStep(devState.workingData);
+      }
+      applyWorkingData(true, { refit: true });
+      refreshCourseOptions();
+      toast(`Loaded ${dept.toUpperCase()} dataset`);
+    } catch (err) {
+      console.warn('Failed to load dataset', dept, err);
     }
-    applyWorkingData(true, { refit: true });
-    refreshCourseOptions();
-    toast(`Loaded ${dept.toUpperCase()} dataset`);
   }
 
   // ---------- UI wiring ----------

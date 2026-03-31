@@ -12,8 +12,8 @@ const CONFIG = {
   },
   
   COURSE_NODE: {
-    DEFAULT_RADIUS: 12,
-    HOVER_RADIUS: 16,
+    DEFAULT_RADIUS: 16,
+    HOVER_RADIUS: 20,
     STROKE_WIDTH: 1.25,
     DEFAULT_FILL: "white",
     DEFAULT_STROKE: "black"
@@ -21,9 +21,12 @@ const CONFIG = {
   
   COURSE_TEXT: {
     FONT_FAMILY: "Arial",
-    DEFAULT_SIZE: 11,
-    HOVER_SIZE: 14,
-    DY_OFFSET: "2.5px"
+    PREFIX_SIZE: 8,
+    NUMBER_SIZE: 11,
+    PREFIX_HOVER_SIZE: 9,
+    NUMBER_HOVER_SIZE: 13,
+    PREFIX_DY: "-0.35em",
+    NUMBER_DY: "1.1em"
   },
   
   ANIMATIONS: {
@@ -299,6 +302,15 @@ function initializeVisualization(data) {
     var firstChar = courseNumber.toString().charAt(0).toUpperCase();
     return firstChar;
   }
+
+  function getCoursePrefixLabel(courseNumber) {
+    var firstChar = courseNumber.toString().charAt(0).toUpperCase();
+    if (firstChar === 'S') return "STAT";
+    if (firstChar === 'M') return "MATH";
+    if (firstChar === 'D') return "DSCI";
+    if (firstChar === 'C') return "CPSC";
+    return firstChar;
+  }
   
   function getCourseColor(courseNumber, isRequired, isInList) {
     if (isRequired || isInList) {
@@ -318,6 +330,24 @@ function initializeVisualization(data) {
   
   function getNumericPart(courseNumber) {
     return courseNumber.toString().substring(1);
+  }
+
+  function buildCourseLabel(textSelection, courseNumber, sizes) {
+    var prefix = getCoursePrefixLabel(courseNumber);
+    var number = getNumericPart(courseNumber);
+    textSelection.selectAll("tspan").remove();
+    textSelection.append("tspan")
+      .attr("class", "course-prefix")
+      .attr("x", 0)
+      .attr("dy", CONFIG.COURSE_TEXT.PREFIX_DY)
+      .attr("font-size", sizes.prefix)
+      .text(prefix);
+    textSelection.append("tspan")
+      .attr("class", "course-number")
+      .attr("x", 0)
+      .attr("dy", CONFIG.COURSE_TEXT.NUMBER_DY)
+      .attr("font-size", sizes.number)
+      .text(number);
   }
 
   function getCurrentDataSource() {
@@ -354,8 +384,17 @@ function initializeVisualization(data) {
         .interrupt()
         .transition()
         .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
-        .attr("font-size", CONFIG.COURSE_TEXT.DEFAULT_SIZE)
         .style("opacity", 1);
+      courseNumbers.selectAll("tspan.course-prefix")
+        .interrupt()
+        .transition()
+        .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
+        .attr("font-size", CONFIG.COURSE_TEXT.PREFIX_SIZE);
+      courseNumbers.selectAll("tspan.course-number")
+        .interrupt()
+        .transition()
+        .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
+        .attr("font-size", CONFIG.COURSE_TEXT.NUMBER_SIZE);
       
       infoNodes.selectAll("circle")
         .interrupt()
@@ -409,7 +448,7 @@ function initializeVisualization(data) {
   svg.on("click.clear touchstart.clear", null);
 
   function fitMapToView(animate) {
-    const nodes = svg.selectAll(".zoom-container circle:not(.burst-circle)").nodes();
+    const nodes = svg.selectAll(".zoom-container circle:not(.burst-circle):not(.grid-dot)").nodes();
     if (nodes.length === 0) return;
 
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
@@ -515,12 +554,6 @@ function initializeVisualization(data) {
   
   const legendData = Object.keys(courseColors).map(key => courseColors[key]);
   const legendItemsData = [
-    ...legendData.map((courseType, index) => ({
-      type: 'course-type',
-      color: courseType.color,
-      label: courseType.label,
-      index: index
-    })),
     {
       type: 'required',
       colors: legendData.map(d => d.color),
@@ -823,8 +856,13 @@ function initializeVisualization(data) {
       .style("opacity", 1);
     courseNumbers.selectAll("text")
       .interrupt()
-      .attr("font-size", CONFIG.COURSE_TEXT.DEFAULT_SIZE)
       .style("opacity", 1);
+    courseNumbers.selectAll("tspan.course-prefix")
+      .interrupt()
+      .attr("font-size", CONFIG.COURSE_TEXT.PREFIX_SIZE);
+    courseNumbers.selectAll("tspan.course-number")
+      .interrupt()
+      .attr("font-size", CONFIG.COURSE_TEXT.NUMBER_SIZE);
     infoNodes.selectAll("circle")
       .interrupt()
       .attr("r", window.innerWidth < 1024 ? CONFIG.COURSE_NODE.DEFAULT_RADIUS + 4 : CONFIG.COURSE_NODE.DEFAULT_RADIUS);
@@ -845,19 +883,7 @@ function initializeVisualization(data) {
     if (!courseInfo) return;
     
     var courseNumberStr = course.course_number.toString();
-    var firstChar = courseNumberStr.charAt(0).toUpperCase();
-    var coursePrefix = "";
-    
-    if (firstChar === 'S') {
-      coursePrefix = "STAT";
-    } else if (firstChar === 'M') {
-      coursePrefix = "MATH";
-    } else if (firstChar === 'D') {
-      coursePrefix = "DSCI";
-    } else if (firstChar === 'C') {
-      coursePrefix = "CPSC";
-    }
-    
+    var coursePrefix = getCoursePrefixLabel(courseNumberStr);
     var numericPart = courseNumberStr.substring(1);
     
     var courseInfoObject = {"number": coursePrefix + " " + numericPart + ":",
@@ -911,9 +937,16 @@ function initializeVisualization(data) {
     
     courseNumbers.selectAll("text")
       .filter(d => coursesToHighlight.includes(d.course_number))
+      .selectAll("tspan.course-prefix")
       .transition()
       .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
-      .attr("font-size", CONFIG.COURSE_TEXT.HOVER_SIZE);
+      .attr("font-size", CONFIG.COURSE_TEXT.PREFIX_HOVER_SIZE);
+    courseNumbers.selectAll("text")
+      .filter(d => coursesToHighlight.includes(d.course_number))
+      .selectAll("tspan.course-number")
+      .transition()
+      .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
+      .attr("font-size", CONFIG.COURSE_TEXT.NUMBER_HOVER_SIZE);
     
     courseNumbers.selectAll("text")
       .filter(d => !coursesToHighlight.includes(d.course_number))
@@ -1004,27 +1037,28 @@ function initializeVisualization(data) {
       burstText.enter()
         .append("text")
         .attr("class", `burst-text burst-text-${courseIndex}`)
-        .attr("x", xcoord(burstInfo.data.x))
-        .attr("y", ycoord(burstInfo.data.y))
+        .attr("transform", `translate(${xcoord(burstInfo.data.x)}, ${ycoord(burstInfo.data.y)})`)
         .attr("text-anchor", "middle")
-        .attr("dy", CONFIG.COURSE_TEXT.DY_OFFSET)
         .attr("font-family", CONFIG.COURSE_TEXT.FONT_FAMILY)
-        .attr("font-size", CONFIG.COURSE_TEXT.HOVER_SIZE)
         .attr("fill", function(d) {
           var courseType = getCourseType(d);
           var burstFill = originalFill !== CONFIG.COURSE_NODE.DEFAULT_FILL ? (courseColors[courseType] ? courseColors[courseType].color : CONFIG.BURST.FALLBACK_COLOR) : CONFIG.COURSE_NODE.DEFAULT_FILL;
           return burstFill !== CONFIG.COURSE_NODE.DEFAULT_FILL ? CONFIG.COURSE_NODE.DEFAULT_FILL : CONFIG.COURSE_NODE.DEFAULT_STROKE;
         })
         .attr("opacity", 0)
-        .text(d => getNumericPart(d))
+        .each(function(d) {
+          buildCourseLabel(d3.select(this), d, {
+            prefix: CONFIG.COURSE_TEXT.PREFIX_HOVER_SIZE,
+            number: CONFIG.COURSE_TEXT.NUMBER_HOVER_SIZE
+          });
+        })
         .transition()
         .duration(CONFIG.ANIMATIONS.BURST_DURATION)
         .attr("opacity", 1)
-        .attr("x", function(d, i) {
-          return xcoord(burstInfo.data.x) + CONFIG.BURST.HORIZONTAL_OFFSET + i * CONFIG.BURST.SPACING;
-        })
-        .attr("y", function(d, i) {
-          return ycoord(burstInfo.data.y);
+        .attr("transform", function(d, i) {
+          const x = xcoord(burstInfo.data.x) + CONFIG.BURST.HORIZONTAL_OFFSET + i * CONFIG.BURST.SPACING;
+          const y = ycoord(burstInfo.data.y);
+          return `translate(${x}, ${y})`;
         });
     });
   };
@@ -1043,8 +1077,17 @@ function initializeVisualization(data) {
       .interrupt()
       .transition()
       .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
-      .attr("font-size", CONFIG.COURSE_TEXT.DEFAULT_SIZE)
       .style("opacity", 1);
+    courseNumbers.selectAll("tspan.course-prefix")
+      .interrupt()
+      .transition()
+      .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
+      .attr("font-size", CONFIG.COURSE_TEXT.PREFIX_SIZE);
+    courseNumbers.selectAll("tspan.course-number")
+      .interrupt()
+      .transition()
+      .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
+      .attr("font-size", CONFIG.COURSE_TEXT.NUMBER_SIZE);
     
     infoNodes.selectAll("circle")
       .interrupt()
@@ -1163,13 +1206,17 @@ function initializeVisualization(data) {
       .data(updateCoursesProgram,course => course.course_number)
       .join(function (enter) {
         enter.append("text")
-          .attr("x",course => xcoord(course.x))
-          .attr("y",course => ycoord(course.y))
-          .attr("text-anchor","middle").attr("dy",CONFIG.COURSE_TEXT.DY_OFFSET)
-          .attr("font-family",CONFIG.COURSE_TEXT.FONT_FAMILY).attr("font-size",CONFIG.COURSE_TEXT.DEFAULT_SIZE)
+          .attr("transform", course => `translate(${xcoord(course.x)}, ${ycoord(course.y)})`)
+          .attr("text-anchor","middle")
+          .attr("font-family",CONFIG.COURSE_TEXT.FONT_FAMILY)
           .attr("fill",course => (course.required || courseList.includes(course.course_number)) ? "white" : "black")
           .style("opacity",0)
-          .text(d => getNumericPart(d.course_number))
+          .each(function(d) {
+            buildCourseLabel(d3.select(this), d.course_number, {
+              prefix: CONFIG.COURSE_TEXT.PREFIX_SIZE,
+              number: CONFIG.COURSE_TEXT.NUMBER_SIZE
+            });
+          })
           .transition()
           .delay(duration * CONFIG.TRANSITIONS.ENTER_DELAY_MULTIPLIER).duration(duration)
           .style("opacity",1);
@@ -1177,10 +1224,15 @@ function initializeVisualization(data) {
         update
           .attr("fill",course => (course.required || courseList.includes(course.course_number)) ? "white" : "black")
           .style("opacity", 1)
+          .each(function(d) {
+            buildCourseLabel(d3.select(this), d.course_number, {
+              prefix: CONFIG.COURSE_TEXT.PREFIX_SIZE,
+              number: CONFIG.COURSE_TEXT.NUMBER_SIZE
+            });
+          })
           .transition()
           .delay(duration * CONFIG.TRANSITIONS.UPDATE_DELAY_MULTIPLIER).duration(duration)
-          .attr("x",course => xcoord(course.x))
-          .attr("y",course => ycoord(course.y));
+          .attr("transform", course => `translate(${xcoord(course.x)}, ${ycoord(course.y)})`);
       },function (exit) {
         exit.transition()
           .duration(duration)
