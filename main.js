@@ -179,6 +179,10 @@ function smoothTransition(newData) {
   appState.currentSelectedProgram = programs[0];
   appState.programRequirementsHTML = programRequirementsHTML;
   
+  var svg = d3.select("#course-map svg");
+  // Reset zoom immediately so department switch does a single visible camera move.
+  svg.call(appState.zoom.transform, d3.zoomIdentity);
+  
   appState.renderProgram(programs[0], [], CONFIG.ANIMATIONS.TRANSITION_DURATION, newData);
   
   setTimeout(() => {

@@ -11,6 +11,9 @@
 
   const devState = {
     currentDept: 'stats',
+    loadRequestId: 0,
+    statsGridSize: null,
+    hasUnexportedChanges: false,
     workingData: null,
     baseData: null,
     baseGridSize: null,
@@ -43,6 +46,16 @@
 
   function getCourseOptions() {
     return devState.workingData ? devState.workingData.courses || [] : [];
+  }
+
+  function setUnexportedChanges(hasChanges) {
+    devState.hasUnexportedChanges = !!hasChanges;
+  }
+
+  function confirmDatasetSwitch(nextDept) {
+    if (!devState.hasUnexportedChanges) return true;
+    const nextLabel = nextDept === 'dsci' ? 'Data Science' : 'Statistics';
+    return window.confirm(`You have unexported changes that have not been downloaded. Switch to ${nextLabel} anyway?`);
   }
 
   // Allow multi-select with simple clicks (no Ctrl/Cmd) by toggling options manually
@@ -179,33 +192,34 @@
     }
   }
 
-  // Derive a natural grid step from existing coordinates (gcd of deltas), fallback to 1
+  // Derive a natural grid step from existing coordinates, robust to decimal values.
   function computeGridStep(data) {
     if (!data) return 1;
-    const coords = [];
+    const xs = [];
+    const ys = [];
     PROGRAM_KEYS.forEach((key) => {
-      (data[key] || []).forEach((c) => coords.push([c.x, c.y]));
+      (data[key] || []).forEach((c) => {
+        if (Number.isFinite(c.x)) xs.push(c.x);
+        if (Number.isFinite(c.y)) ys.push(c.y);
+      });
     });
-    if (coords.length < 2) return 1;
-    const deltas = [];
-    for (let i = 1; i < coords.length; i++) {
-      const [x1, y1] = coords[i - 1];
-      const [x2, y2] = coords[i];
-      deltas.push(Math.abs(x2 - x1));
-      deltas.push(Math.abs(y2 - y1));
-    }
-    const positive = deltas.filter((d) => d > 0);
-    if (positive.length === 0) return 1;
-    const gcd = positive.reduce((a, b) => {
-      let x = a, y = b;
-      while (y) {
-        const t = y;
-        y = x % y;
-        x = t;
+    const epsilon = 1e-6;
+    const collectDeltas = (values) => {
+      const sortedUnique = Array.from(new Set(values.map((v) => Number(v.toFixed(4))))).sort((a, b) => a - b);
+      const deltas = [];
+      for (let i = 1; i < sortedUnique.length; i++) {
+        const delta = sortedUnique[i] - sortedUnique[i - 1];
+        if (delta > epsilon) deltas.push(delta);
       }
-      return x;
-    });
-    return gcd || 1;
+      return deltas;
+    };
+
+    const deltas = collectDeltas(xs).concat(collectDeltas(ys));
+    if (!deltas.length) return 1;
+
+    const minDelta = Math.min(...deltas);
+    const step = Number(minDelta.toFixed(3));
+    return Math.max(0.2, step || 1);
   }
 
   function getAllCourseCoords(data) {
@@ -350,7 +364,7 @@
 
   function findAvailableCoords(basePoint) {
     const baseStep = devState.gridSize || 1;
-    const xStep = baseStep / 2; // horizontal half-step grid
+    const xStep = baseStep;
     const yStep = baseStep;
     const snappedBase = snapDataPoint(basePoint);
     const occupied = new Set();
@@ -457,8 +471,7 @@
   function snapDataPoint(point) {
     const baseStep = devState.gridSize || 1;
     if (!devState.gridSnap || baseStep <= 0) return point;
-    // Add an extra column between every existing column by allowing half-step snaps on X
-    const xStep = baseStep / 2;
+    const xStep = baseStep;
     const yStep = baseStep;
     return {
       x: Math.round(point.x / xStep) * xStep,
@@ -492,7 +505,7 @@
     const bounds = getGridBounds(devState.workingData);
     if (!bounds) return;
     const baseStep = devState.gridSize || 1;
-    const xStep = baseStep / 2; // half-step horizontally to create the in-between columns
+    const xStep = baseStep;
     const yStep = baseStep;
     const padding = baseStep * 20; // extend far beyond current map (20 steps each direction)
     const xs = [];
@@ -503,9 +516,16 @@
     for (let y = Math.floor((bounds.minY - padding) / yStep) * yStep; y <= bounds.maxY + padding; y += yStep) {
       ys.push(y);
     }
+    const MAX_GRID_POINTS = 15000;
+    const totalPoints = xs.length * ys.length;
+    const stride = totalPoints > MAX_GRID_POINTS
+      ? Math.ceil(Math.sqrt(totalPoints / MAX_GRID_POINTS))
+      : 1;
+    const sampledXs = stride > 1 ? xs.filter((_, i) => i % stride === 0) : xs;
+    const sampledYs = stride > 1 ? ys.filter((_, i) => i % stride === 0) : ys;
     const points = [];
-    xs.forEach((x) => {
-      ys.forEach((y) => points.push({ x, y }));
+    sampledXs.forEach((x) => {
+      sampledYs.forEach((y) => points.push({ x, y }));
     });
     const circles = gridLayer.selectAll('circle').data(points);
     circles.enter()
@@ -606,8 +626,13 @@
       .style('opacity', 1);
     courseNumbers.selectAll('text')
       .interrupt()
-      .attr('font-size', CONFIG.COURSE_TEXT.DEFAULT_SIZE)
       .style('opacity', 1);
+    courseNumbers.selectAll('tspan.course-prefix')
+      .interrupt()
+      .attr('font-size', CONFIG.COURSE_TEXT.PREFIX_SIZE);
+    courseNumbers.selectAll('tspan.course-number')
+      .interrupt()
+      .attr('font-size', CONFIG.COURSE_TEXT.NUMBER_SIZE);
     requisiteLines.selectAll('line')
       .attr('opacity', CONFIG.LINES.PRIMARY_VISIBLE_OPACITY);
     courseNodes.selectAll('.burst-circle').remove();
@@ -669,8 +694,11 @@
     const selectedProgram = programs.find((p) => p.program_id === preservedId) || fallbackProgram;
     appState.currentSelectedProgram = selectedProgram;
 
+    // In drag mode, avoid transitions so disableHoverInteractions can't interrupt exit-removal.
+    const renderDuration = (animate && !devState.dragEnabled) ? CONFIG.ANIMATIONS.TRANSITION_DURATION : 0;
+
     // Render with latest data
-    appState.renderProgram(selectedProgram, [], animate ? CONFIG.ANIMATIONS.TRANSITION_DURATION : 0, devState.workingData);
+    appState.renderProgram(selectedProgram, [], renderDuration, devState.workingData);
     currentDepartment = devState.currentDept;
 
     setTimeout(() => {
@@ -684,7 +712,7 @@
       }
       rebuildProgramNav();
       updateGridOverlay();
-    }, animate ? CONFIG.ANIMATIONS.POST_TRANSITION_FIT_DELAY / 4 : 50);
+    }, renderDuration > 0 ? CONFIG.ANIMATIONS.POST_TRANSITION_FIT_DELAY / 4 : 50);
   }
 
   function rebuildProgramNav() {
@@ -705,7 +733,15 @@
           programNav.selectAll('div').classed('highlight', false);
           d3.select(this).classed('highlight', true);
           if (appState) appState.currentSelectedProgram = program;
-          appState?.renderProgram(program, [], CONFIG.ANIMATIONS.TRANSITION_DURATION, devState.workingData);
+          const renderDuration = devState.dragEnabled ? 0 : CONFIG.ANIMATIONS.TRANSITION_DURATION;
+          appState?.renderProgram(program, [], renderDuration, devState.workingData);
+          if (devState.dragEnabled) {
+            setTimeout(() => {
+              disableHoverInteractions();
+              attachDragHandlers();
+              document.body.classList.add('drag-mode');
+            }, 0);
+          }
           if (appState?.programRequirementsHTML?.[program.program_id]) {
             courseInfoDiv.html(appState.programRequirementsHTML[program.program_id]);
           }
@@ -758,8 +794,9 @@
           .attr('cy', sy);
         appState.layers.courseNumbers.selectAll('text')
           .filter((c) => c.course_number === d.course_number)
-          .attr('x', sx)
-          .attr('y', sy);
+          .attr('transform', `translate(${sx}, ${sy})`)
+          .attr('x', null)
+          .attr('y', null);
         appState.layers.requisiteLines.selectAll('line')
           .filter((r) => r.course_number === d.course_number)
           .attr('x1', sx)
@@ -779,6 +816,7 @@
         };
         const snapped = snapDataPoint(rawDataPoint);
         persistCoursePosition(d.course_number, snapped.x, snapped.y);
+        setUnexportedChanges(true);
         toast(`Saved position for ${d.course_number}${devState.gridSnap ? ' (snapped to grid)' : ''}`);
         applyWorkingData(false, { refit: false });
       });
@@ -796,7 +834,8 @@
     const coords = findAvailableCoords(computeCenterCoords());
     updateCourseMetadata(payload, coords);
     removeExistingRequisites(payload.number);
-  addRequisites(payload.number, payload.prereqs, payload.coreqs, coords, payload.prereqTextLines, payload.coreqTextLines);
+    addRequisites(payload.number, payload.prereqs, payload.coreqs, coords, payload.prereqTextLines, payload.coreqTextLines);
+    setUnexportedChanges(true);
     applyWorkingData(false, { refit: false });
     refreshCourseOptions(payload.number);
     toast('Course placed. Drag to adjust, then save.');
@@ -812,7 +851,8 @@
     const coords = getCoordsForCourse(payload.number);
     updateCourseMetadata(payload, coords);
     removeExistingRequisites(payload.number);
-  addRequisites(payload.number, payload.prereqs, payload.coreqs, coords, payload.prereqTextLines, payload.coreqTextLines);
+    addRequisites(payload.number, payload.prereqs, payload.coreqs, coords, payload.prereqTextLines, payload.coreqTextLines);
+    setUnexportedChanges(true);
     applyWorkingData(false, { refit: false });
     if (!skipRefresh) {
       refreshCourseOptions(payload.number);
@@ -826,6 +866,7 @@
     if (!devState.baseData) return;
     devState.workingData = deepClone(devState.baseData);
     devState.gridSize = devState.baseGridSize || computeGridStep(devState.workingData);
+    setUnexportedChanges(false);
     applyWorkingData(true);
     refreshCourseOptions();
     toast('Reverted to last loaded file');
@@ -840,6 +881,7 @@
     a.download = filename;
     a.click();
     URL.revokeObjectURL(a.href);
+    setUnexportedChanges(false);
     toast('Downloaded updated JSON');
   }
 
@@ -853,6 +895,7 @@
         devState.baseData = deepClone(data);
         devState.baseGridSize = computeGridStep(devState.baseData);
         devState.gridSize = devState.baseGridSize;
+        setUnexportedChanges(false);
         applyWorkingData(true);
         refreshCourseOptions();
         toast('Loaded custom JSON');
@@ -864,23 +907,44 @@
   }
 
   async function loadDataset(dept, resetBase = true) {
+    const requestId = ++devState.loadRequestId;
+    devState.currentDept = dept;
+    currentDepartment = dept;
+    syncDeptUI();
+
     try {
       const data = await d3.json(DEV_DATA_FILES[dept]);
-      devState.currentDept = dept;
-      syncDeptUI();
+      if (requestId !== devState.loadRequestId) {
+        return;
+      }
+
       devState.workingData = deepClone(data);
       if (resetBase) {
         devState.baseData = deepClone(data);
-        devState.baseGridSize = computeGridStep(devState.baseData);
+        if (dept === 'stats') {
+          devState.statsGridSize = computeGridStep(devState.baseData);
+        }
+        const computedGridSize = computeGridStep(devState.baseData);
+        devState.baseGridSize = dept === 'dsci'
+          ? (devState.statsGridSize || computedGridSize)
+          : computedGridSize;
         devState.gridSize = devState.baseGridSize;
       } else {
-        devState.gridSize = devState.baseGridSize || computeGridStep(devState.workingData);
+        const computedGridSize = computeGridStep(devState.workingData);
+        const targetGridSize = devState.baseGridSize || (dept === 'dsci'
+          ? (devState.statsGridSize || computedGridSize)
+          : computedGridSize);
+        devState.gridSize = targetGridSize;
       }
       applyWorkingData(true, { refit: true });
       refreshCourseOptions();
+      setUnexportedChanges(false);
       toast(`Loaded ${dept.toUpperCase()} dataset`);
     } catch (err) {
       console.warn('Failed to load dataset', dept, err);
+      if (requestId === devState.loadRequestId) {
+        toast(`Failed to load ${dept.toUpperCase()} dataset`);
+      }
     }
   }
 
@@ -907,12 +971,18 @@
     legendClose?.addEventListener('click', toggleLegend);
 
     // Dept toggles
-    document.getElementById('dept-stats')?.addEventListener('click', () => {
+    document.getElementById('dept-stats')?.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
       if (devState.currentDept === 'stats') return;
+      if (!confirmDatasetSwitch('stats')) return;
       loadDataset('stats');
     });
-    document.getElementById('dept-dsci')?.addEventListener('click', () => {
+    document.getElementById('dept-dsci')?.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
       if (devState.currentDept === 'dsci') return;
+      if (!confirmDatasetSwitch('dsci')) return;
       loadDataset('dsci');
     });
   }
@@ -927,7 +997,15 @@
     closeBtn?.addEventListener('click', closePanel);
 
     document.getElementById('dev-reload-base')?.addEventListener('click', () => loadDataset(devState.currentDept, true));
-    document.getElementById('dev-department')?.addEventListener('change', (e) => loadDataset(e.target.value));
+    document.getElementById('dev-department')?.addEventListener('change', (e) => {
+      const nextDept = e.target.value;
+      if (nextDept === devState.currentDept) return;
+      if (!confirmDatasetSwitch(nextDept)) {
+        e.target.value = devState.currentDept;
+        return;
+      }
+      loadDataset(nextDept);
+    });
     document.getElementById('dev-import')?.addEventListener('change', (e) => importJSONFile(e.target.files[0]));
     document.getElementById('dev-export')?.addEventListener('click', downloadJSON);
     document.getElementById('dev-fit')?.addEventListener('click', () => appState?.fitMapToView(true));
@@ -983,7 +1061,7 @@
         updateGridOverlay();
         if (devState.gridSnap) {
           const base = devState.gridSize;
-          toast(`Grid snap on (X step ${base / 2}, Y step ${base})`);
+          toast(`Grid snap on (X step ${base}, Y step ${base})`);
         } else {
           toast('Freeform dragging enabled');
         }
