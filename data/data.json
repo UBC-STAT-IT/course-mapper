@@ -519,6 +519,21 @@
       "type": "",
       "description": "",
       "Unnamed: 4": "›"
+    },
+    {
+      "requisite_id": "S302-pre-M200-1775620767466",
+      "course_number": "S302",
+      "type": "pre",
+      "description": "Prerequisite: M200",
+      "Unnamed: 4": ""
+    },
+    {
+      "requisite_id": "S302-pretext-1775620767466-0",
+      "course_number": "S302",
+      "type": "pre",
+      "is_text": true,
+      "description": "Prerequisite: One of MATH 200, MATH 226, MATH 217, MATH 253, MATH 254",
+      "Unnamed: 4": ""
     }
   ],
   "course_requisites": [
@@ -1036,12 +1051,12 @@
       "equivalency_number": "M254"
     },
     {
-      "equivalency_id": "S302-eq-0-1774990397238",
+      "equivalency_id": "S302-eq-0-1775620767465",
       "course_number": "S302",
       "equivalency_number": "M302"
     },
     {
-      "equivalency_id": "S302-eq-1-1774990397238",
+      "equivalency_id": "S302-eq-1-1775620767465",
       "course_number": "S302",
       "equivalency_number": "M318"
     }
@@ -2372,6 +2387,18 @@
       "requisite_is_primary": 1,
       "requisite_is_co": 0,
       "course_requisite_number": "S416S306"
+    },
+    {
+      "requisite_id": "S302-pre-M200-1775620767466",
+      "course_number": "S302",
+      "requisite_number": "M200",
+      "course_x": -1,
+      "course_y": 9,
+      "requisite_x": -2.5,
+      "requisite_y": 6,
+      "requisite_is_primary": 1,
+      "requisite_is_co": 0,
+      "course_requisite_number": "S302M200"
     }
   ]
 }
