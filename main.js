@@ -177,6 +177,9 @@ function smoothTransition(newData) {
   
   appState.data = newData;
   appState.currentSelectedProgram = programs[0];
+  if (typeof appState.clearInteractionState === 'function') {
+    appState.clearInteractionState();
+  }
   appState.programRequirementsHTML = programRequirementsHTML;
   
   var svg = d3.select("#course-map svg");
@@ -1354,6 +1357,7 @@ function initializeVisualization(data) {
           .style("opacity", 1)
           .transition()
           .delay(duration * CONFIG.TRANSITIONS.UPDATE_DELAY_MULTIPLIER).duration(duration)
+          .attr("r", CONFIG.COURSE_NODE.DEFAULT_RADIUS)
           .attr("cx",course => xcoord(course.x))
           .attr("cy",course => ycoord(course.y));
       },function (exit) {
@@ -1388,15 +1392,21 @@ function initializeVisualization(data) {
         update
           .attr("fill",course => (course.required || courseList.includes(course.course_number)) ? "white" : "black")
           .style("opacity", 1)
-          .each(function(d) {
-            buildCourseLabel(d3.select(this), d.course_number, {
-              prefix: CONFIG.COURSE_TEXT.PREFIX_SIZE,
-              number: CONFIG.COURSE_TEXT.NUMBER_SIZE
-            });
-          })
           .transition()
           .delay(duration * CONFIG.TRANSITIONS.UPDATE_DELAY_MULTIPLIER).duration(duration)
           .attr("transform", course => `translate(${xcoord(course.x)}, ${ycoord(course.y)})`);
+
+        update
+          .selectAll("tspan.course-prefix")
+          .transition()
+          .delay(duration * CONFIG.TRANSITIONS.UPDATE_DELAY_MULTIPLIER).duration(duration)
+          .attr("font-size", CONFIG.COURSE_TEXT.PREFIX_SIZE);
+
+        update
+          .selectAll("tspan.course-number")
+          .transition()
+          .delay(duration * CONFIG.TRANSITIONS.UPDATE_DELAY_MULTIPLIER).duration(duration)
+          .attr("font-size", CONFIG.COURSE_TEXT.NUMBER_SIZE);
       },function (exit) {
         exit.transition()
           .duration(duration)
@@ -1605,6 +1615,12 @@ function initializeVisualization(data) {
     },
     currentSelectedProgram: currentSelectedProgram,
     currentSelectedCourse: currentSelectedCourse,
+    clearInteractionState: function() {
+      pinnedCourseNumber = null;
+      currentSelectedCourse = null;
+      this.currentSelectedCourse = null;
+      updateCourseInteractivityCursors();
+    },
     programRequirementsHTML: programRequirementsHTML,
     screenToData: function(screenX, screenY) {
       const transform = d3.zoomTransform(svg.node());
