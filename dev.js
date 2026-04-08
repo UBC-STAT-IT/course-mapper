@@ -362,10 +362,17 @@
     return { x: dataX, y: dataY };
   }
 
-  function findAvailableCoords(basePoint) {
+  function getGridSteps() {
     const baseStep = devState.gridSize || 1;
-    const xStep = baseStep;
-    const yStep = baseStep;
+    const isStats = devState.currentDept === 'stats';
+    return {
+      xStep: isStats ? baseStep / 2 : baseStep,
+      yStep: baseStep
+    };
+  }
+
+  function findAvailableCoords(basePoint) {
+    const { xStep, yStep } = getGridSteps();
     const snappedBase = snapDataPoint(basePoint);
     const occupied = new Set();
     getAllCourseCoords(devState.workingData).forEach(({ x, y }) => {
@@ -469,10 +476,8 @@
   }
 
   function snapDataPoint(point) {
-    const baseStep = devState.gridSize || 1;
-    if (!devState.gridSnap || baseStep <= 0) return point;
-    const xStep = baseStep;
-    const yStep = baseStep;
+    if (!devState.gridSnap || (devState.gridSize || 1) <= 0) return point;
+    const { xStep, yStep } = getGridSteps();
     return {
       x: Math.round(point.x / xStep) * xStep,
       y: Math.round(point.y / yStep) * yStep
@@ -505,8 +510,7 @@
     const bounds = getGridBounds(devState.workingData);
     if (!bounds) return;
     const baseStep = devState.gridSize || 1;
-    const xStep = baseStep;
-    const yStep = baseStep;
+    const { xStep, yStep } = getGridSteps();
     const padding = baseStep * 20; // extend far beyond current map (20 steps each direction)
     const xs = [];
     for (let x = Math.floor((bounds.minX - padding) / xStep) * xStep; x <= bounds.maxX + padding; x += xStep) {
@@ -1060,8 +1064,8 @@
         }
         updateGridOverlay();
         if (devState.gridSnap) {
-          const base = devState.gridSize;
-          toast(`Grid snap on (X step ${base}, Y step ${base})`);
+          const { xStep, yStep } = getGridSteps();
+          toast(`Grid snap on (X step ${xStep}, Y step ${yStep})`);
         } else {
           toast('Freeform dragging enabled');
         }

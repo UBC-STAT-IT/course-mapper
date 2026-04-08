@@ -417,8 +417,10 @@ function initializeVisualization(data) {
       courseNumbers.selectAll(".burst-text").remove();
       
       // Clear the currently selected course
+      pinnedCourseNumber = null;
       currentSelectedCourse = null;
       if (appState) appState.currentSelectedCourse = null;
+      updateCourseInteractivityCursors();
       
       // Reset course info to program requirements
       if (appState && appState.currentSelectedProgram && appState.programRequirementsHTML[appState.currentSelectedProgram.program_id]) {
@@ -812,6 +814,7 @@ function initializeVisualization(data) {
   
   var currentSelectedProgram = null;
   var currentSelectedCourse = null;
+  var pinnedCourseNumber = null;
   
   var programRequirementsHTML = {};
   
@@ -837,6 +840,10 @@ function initializeVisualization(data) {
       d3.select(this).classed("highlight",true);
       
       currentSelectedProgram = program;
+      pinnedCourseNumber = null;
+      currentSelectedCourse = null;
+      if (appState) appState.currentSelectedCourse = null;
+      updateCourseInteractivityCursors();
       if (appState) {
         appState.currentSelectedProgram = program;
       }
@@ -849,31 +856,48 @@ function initializeVisualization(data) {
     });
   });
 
-  function showCourseInfo (event,course) {
+  function showCourseInfo (event,course,options) {
+    options = options || {};
+    var suppressAnimation = !!options.suppressAnimation;
+    var transitionFromCourse = options.transitionFromCourse || null;
+    var useCrossfadeTransition = !!transitionFromCourse;
+    var hoverDuration = suppressAnimation ? 0 : CONFIG.ANIMATIONS.HOVER_DURATION;
+    var burstDuration = suppressAnimation ? 0 : CONFIG.ANIMATIONS.BURST_DURATION;
     if (isTransitioning) return;
+    if (pinnedCourseNumber && event && event.type !== 'click' && event.type !== 'touchstart') {
+      return;
+    }
     
     // Set the currently selected course
     currentSelectedCourse = course.course_number;
     if (appState) appState.currentSelectedCourse = course.course_number;
     
     // First, clear any existing highlights from previous course
-    // Interrupt transitions and ensure proper final state
-    courseNodes.selectAll("circle")
-      .interrupt()
-      .attr("r", CONFIG.COURSE_NODE.DEFAULT_RADIUS)
-      .style("opacity", 1);
-    courseNumbers.selectAll("text")
-      .interrupt()
-      .style("opacity", 1);
-    courseNumbers.selectAll("tspan.course-prefix")
-      .interrupt()
-      .attr("font-size", CONFIG.COURSE_TEXT.PREFIX_SIZE);
-    courseNumbers.selectAll("tspan.course-number")
-      .interrupt()
-      .attr("font-size", CONFIG.COURSE_TEXT.NUMBER_SIZE);
-    infoNodes.selectAll("circle")
-      .interrupt()
-      .attr("r", window.innerWidth < 1024 ? CONFIG.COURSE_NODE.DEFAULT_RADIUS + 4 : CONFIG.COURSE_NODE.DEFAULT_RADIUS);
+    // For crossfade transitions, keep current visual state and animate between highlight sets.
+    if (!useCrossfadeTransition) {
+      courseNodes.selectAll("circle")
+        .interrupt()
+        .attr("r", CONFIG.COURSE_NODE.DEFAULT_RADIUS)
+        .style("opacity", 1);
+      courseNumbers.selectAll("text")
+        .interrupt()
+        .style("opacity", 1);
+      courseNumbers.selectAll("tspan.course-prefix")
+        .interrupt()
+        .attr("font-size", CONFIG.COURSE_TEXT.PREFIX_SIZE);
+      courseNumbers.selectAll("tspan.course-number")
+        .interrupt()
+        .attr("font-size", CONFIG.COURSE_TEXT.NUMBER_SIZE);
+      infoNodes.selectAll("circle")
+        .interrupt()
+        .attr("r", window.innerWidth < 1024 ? CONFIG.COURSE_NODE.DEFAULT_RADIUS + 4 : CONFIG.COURSE_NODE.DEFAULT_RADIUS);
+    } else {
+      courseNodes.selectAll("circle").interrupt();
+      courseNumbers.selectAll("text").interrupt();
+      courseNumbers.selectAll("tspan.course-prefix").interrupt();
+      courseNumbers.selectAll("tspan.course-number").interrupt();
+      infoNodes.selectAll("circle").interrupt();
+    }
     
     // Clear all prerequisite lines
     requisiteLines.selectAll("line")
@@ -931,42 +955,88 @@ function initializeVisualization(data) {
     
     var coursesToHighlight = [course.course_number, ...prerequisiteCourses];
     
-    courseNodes.selectAll("circle")
-      .filter(d => coursesToHighlight.includes(d.course_number))
-      .transition()
-      .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
-      .attr("r", CONFIG.COURSE_NODE.HOVER_RADIUS);
-    
-    courseNodes.selectAll("circle")
-      .filter(d => !coursesToHighlight.includes(d.course_number))
-      .transition()
-      .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
-      .style("opacity", CONFIG.HOVER_EFFECTS.NON_HIGHLIGHTED_OPACITY);
-    
-    courseNumbers.selectAll("text")
-      .filter(d => coursesToHighlight.includes(d.course_number))
-      .selectAll("tspan.course-prefix")
-      .transition()
-      .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
-      .attr("font-size", CONFIG.COURSE_TEXT.PREFIX_HOVER_SIZE);
-    courseNumbers.selectAll("text")
-      .filter(d => coursesToHighlight.includes(d.course_number))
-      .selectAll("tspan.course-number")
-      .transition()
-      .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
-      .attr("font-size", CONFIG.COURSE_TEXT.NUMBER_HOVER_SIZE);
-    
-    courseNumbers.selectAll("text")
-      .filter(d => !coursesToHighlight.includes(d.course_number))
-      .transition()
-      .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
-      .style("opacity", CONFIG.HOVER_EFFECTS.NON_HIGHLIGHTED_OPACITY);
-    
-    infoNodes.selectAll("circle")
-      .filter(d => coursesToHighlight.includes(d.course_number))
-      .transition()
-      .duration(CONFIG.ANIMATIONS.HOVER_DURATION)
-      .attr("r", CONFIG.COURSE_NODE.HOVER_RADIUS);
+    if (useCrossfadeTransition) {
+      courseNodes.selectAll("circle")
+        .transition()
+        .duration(hoverDuration)
+        .attr("r", function(d) {
+          return coursesToHighlight.includes(d.course_number) ? CONFIG.COURSE_NODE.HOVER_RADIUS : CONFIG.COURSE_NODE.DEFAULT_RADIUS;
+        })
+        .style("opacity", function(d) {
+          return coursesToHighlight.includes(d.course_number) ? 1 : CONFIG.HOVER_EFFECTS.NON_HIGHLIGHTED_OPACITY;
+        });
+
+      courseNumbers.selectAll("text")
+        .transition()
+        .duration(hoverDuration)
+        .style("opacity", function(d) {
+          return coursesToHighlight.includes(d.course_number) ? 1 : CONFIG.HOVER_EFFECTS.NON_HIGHLIGHTED_OPACITY;
+        });
+
+      courseNumbers.selectAll("text")
+        .selectAll("tspan.course-prefix")
+        .transition()
+        .duration(hoverDuration)
+        .attr("font-size", function() {
+          var parentData = d3.select(this.parentNode).datum();
+          return coursesToHighlight.includes(parentData.course_number) ? CONFIG.COURSE_TEXT.PREFIX_HOVER_SIZE : CONFIG.COURSE_TEXT.PREFIX_SIZE;
+        });
+
+      courseNumbers.selectAll("text")
+        .selectAll("tspan.course-number")
+        .transition()
+        .duration(hoverDuration)
+        .attr("font-size", function() {
+          var parentData = d3.select(this.parentNode).datum();
+          return coursesToHighlight.includes(parentData.course_number) ? CONFIG.COURSE_TEXT.NUMBER_HOVER_SIZE : CONFIG.COURSE_TEXT.NUMBER_SIZE;
+        });
+
+      infoNodes.selectAll("circle")
+        .transition()
+        .duration(hoverDuration)
+        .attr("r", function(d) {
+          return coursesToHighlight.includes(d.course_number)
+            ? CONFIG.COURSE_NODE.HOVER_RADIUS
+            : (window.innerWidth < 1024 ? CONFIG.COURSE_NODE.DEFAULT_RADIUS + 4 : CONFIG.COURSE_NODE.DEFAULT_RADIUS);
+        });
+    } else {
+      courseNodes.selectAll("circle")
+        .filter(d => coursesToHighlight.includes(d.course_number))
+        .transition()
+        .duration(hoverDuration)
+        .attr("r", CONFIG.COURSE_NODE.HOVER_RADIUS);
+      
+      courseNodes.selectAll("circle")
+        .filter(d => !coursesToHighlight.includes(d.course_number))
+        .transition()
+        .duration(hoverDuration)
+        .style("opacity", CONFIG.HOVER_EFFECTS.NON_HIGHLIGHTED_OPACITY);
+      
+      courseNumbers.selectAll("text")
+        .filter(d => coursesToHighlight.includes(d.course_number))
+        .selectAll("tspan.course-prefix")
+        .transition()
+        .duration(hoverDuration)
+        .attr("font-size", CONFIG.COURSE_TEXT.PREFIX_HOVER_SIZE);
+      courseNumbers.selectAll("text")
+        .filter(d => coursesToHighlight.includes(d.course_number))
+        .selectAll("tspan.course-number")
+        .transition()
+        .duration(hoverDuration)
+        .attr("font-size", CONFIG.COURSE_TEXT.NUMBER_HOVER_SIZE);
+      
+      courseNumbers.selectAll("text")
+        .filter(d => !coursesToHighlight.includes(d.course_number))
+        .transition()
+        .duration(hoverDuration)
+        .style("opacity", CONFIG.HOVER_EFFECTS.NON_HIGHLIGHTED_OPACITY);
+      
+      infoNodes.selectAll("circle")
+        .filter(d => coursesToHighlight.includes(d.course_number))
+        .transition()
+        .duration(hoverDuration)
+        .attr("r", CONFIG.COURSE_NODE.HOVER_RADIUS);
+    }
     
     if (prereqChainEnabled) {
       coursesToHighlight.forEach(courseNum => {
@@ -1030,7 +1100,7 @@ function initializeVisualization(data) {
         })
         .attr("stroke-width", CONFIG.COURSE_NODE.STROKE_WIDTH)
         .transition()
-        .duration(CONFIG.ANIMATIONS.BURST_DURATION)
+        .duration(burstDuration)
         .attr("r", CONFIG.COURSE_NODE.HOVER_RADIUS)
         .attr("cx", function(d, i) {
           return xcoord(burstInfo.data.x) + CONFIG.BURST.HORIZONTAL_OFFSET + i * CONFIG.BURST.SPACING;
@@ -1061,7 +1131,7 @@ function initializeVisualization(data) {
           });
         })
         .transition()
-        .duration(CONFIG.ANIMATIONS.BURST_DURATION)
+        .duration(burstDuration)
         .attr("opacity", 1)
         .attr("transform", function(d, i) {
           const x = xcoord(burstInfo.data.x) + CONFIG.BURST.HORIZONTAL_OFFSET + i * CONFIG.BURST.SPACING;
@@ -1073,6 +1143,7 @@ function initializeVisualization(data) {
 
   function hideCourseInfo (event,course) {
     if (isTransitioning) return;
+    if (pinnedCourseNumber) return;
     
     courseNodes.selectAll("circle")
       .interrupt()
@@ -1158,6 +1229,50 @@ function initializeVisualization(data) {
       courseInfoDiv.html(programRequirementsHTML[currentSelectedProgram.program_id]);
     }
   };
+
+  function getHighlightedCourseNumbersFor(courseNumber) {
+    var currentDataSource = getCurrentDataSource();
+    var requisitesSource = currentDataSource.requisites_programs || currentDataSource["requisites_program" + currentDataSource.programs[0].program_id];
+
+    function getPrerequisiteChain(targetCourseNumber, visited = new Set()) {
+      if (visited.has(targetCourseNumber)) {
+        return [];
+      }
+      visited.add(targetCourseNumber);
+
+      var directPrereqs = requisitesSource
+        .filter(requisite => requisite.course_number == targetCourseNumber)
+        .map(requisite => requisite.requisite_number);
+
+      var allPrereqs = [...directPrereqs];
+      directPrereqs.forEach(prereq => {
+        var chainPrereqs = getPrerequisiteChain(prereq, new Set(visited));
+        allPrereqs = allPrereqs.concat(chainPrereqs);
+      });
+
+      return [...new Set(allPrereqs)];
+    }
+
+    var directPrereqs = requisitesSource
+      .filter(requisite => requisite.course_number == courseNumber)
+      .map(requisite => requisite.requisite_number);
+
+    var prerequisiteCourses = prereqChainEnabled ? getPrerequisiteChain(courseNumber) : directPrereqs;
+    return new Set([courseNumber, ...prerequisiteCourses]);
+  }
+
+  function updateCourseInteractivityCursors() {
+    var hitAreas = infoNodes.selectAll("circle");
+    if (!pinnedCourseNumber) {
+      hitAreas.style("cursor", "pointer");
+      return;
+    }
+
+    var highlightedWhilePinned = getHighlightedCourseNumbersFor(pinnedCourseNumber);
+    hitAreas.style("cursor", function(d) {
+      return highlightedWhilePinned.has(d.course_number) ? "pointer" : "default";
+    });
+  }
 
   function renderProgram (program,courseList,duration,dataSource) {
     if (duration > 0) {
@@ -1270,19 +1385,44 @@ function initializeVisualization(data) {
       .on("mouseover",showCourseInfo)
       .on("mouseout",hideCourseInfo)
       .on("click touchstart", function(event, d) {
-        // On mobile/tablet, handle touch/click like mouse hover
-        if (window.innerWidth < 1024 && !isTransitioning) {
-          event.preventDefault();
-          event.stopPropagation();
-          
-          // Toggle: if clicking the same course, clear highlights
-          var selectedCourse = appState ? appState.currentSelectedCourse : currentSelectedCourse;
-          if (selectedCourse === d.course_number) {
-            hideCourseInfo(event, d);
-          } else {
-            showCourseInfo(event, d);
+        if (isTransitioning) return;
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (pinnedCourseNumber && pinnedCourseNumber !== d.course_number) {
+          var highlightedWhilePinned = getHighlightedCourseNumbersFor(pinnedCourseNumber);
+          if (!highlightedWhilePinned.has(d.course_number)) {
+            var currentDataSource = getCurrentDataSource();
+            var pinnedCourseData = (currentDataSource["courses_program" + currentDataSource.programs[0].program_id] || [])
+              .find(course => course.course_number == pinnedCourseNumber);
+            pinnedCourseNumber = null;
+            if (pinnedCourseData) {
+              hideCourseInfo(event, pinnedCourseData);
+            }
+            updateCourseInteractivityCursors();
+            return;
           }
         }
+
+        if (pinnedCourseNumber === d.course_number) {
+          pinnedCourseNumber = null;
+          hideCourseInfo(event, d);
+          updateCourseInteractivityCursors();
+          return;
+        }
+
+        var currentlyHighlightedCourse = appState ? appState.currentSelectedCourse : currentSelectedCourse;
+        var previouslyPinnedCourse = pinnedCourseNumber;
+        var hadPinnedCourse = !!previouslyPinnedCourse;
+        pinnedCourseNumber = d.course_number;
+        // If this course is already in the hovered state, pin it without replaying animations.
+        if (currentlyHighlightedCourse !== d.course_number) {
+          showCourseInfo(event, d, {
+            suppressAnimation: false,
+            transitionFromCourse: hadPinnedCourse ? previouslyPinnedCourse : null
+          });
+        }
+        updateCourseInteractivityCursors();
       });
 
     requisiteLines
@@ -1315,6 +1455,8 @@ function initializeVisualization(data) {
           .duration(duration)
           .attr("opacity",0).remove();
       });
+
+    updateCourseInteractivityCursors();
 
   };
 
