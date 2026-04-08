@@ -1073,9 +1073,50 @@ function initializeVisualization(data) {
         }
       }
     }
+
+    var highlightedCourseCoords = (currentDataSource["courses_program" + currentDataSource.programs[0].program_id] || [])
+      .filter(c => coursesToHighlight.includes(c.course_number))
+      .map(c => ({
+        x: xcoord(c.x),
+        y: ycoord(c.y)
+      }));
+
+    function countBurstOverlapsForDirection(burstCourseData, equivalenciesCount, direction) {
+      var overlapCount = 0;
+      var minDistance = CONFIG.COURSE_NODE.HOVER_RADIUS * 2;
+      var minDistanceSq = minDistance * minDistance;
+
+      for (var i = 0; i < equivalenciesCount; i++) {
+        var burstX = xcoord(burstCourseData.x) + direction * (CONFIG.BURST.HORIZONTAL_OFFSET + i * CONFIG.BURST.SPACING);
+        var burstY = ycoord(burstCourseData.y);
+
+        var overlapsHighlighted = highlightedCourseCoords.some(coord => {
+          var dx = coord.x - burstX;
+          var dy = coord.y - burstY;
+          return (dx * dx + dy * dy) < minDistanceSq;
+        });
+
+        if (overlapsHighlighted) {
+          overlapCount += 1;
+        }
+      }
+
+      return overlapCount;
+    }
     
     allBurstData.forEach((burstInfo, courseIndex) => {
       var equivalenciesToShow = burstInfo.equivalencies.slice(0, CONFIG.BURST.MAX_EQUIVALENCIES);
+      var rightOverlapCount = countBurstOverlapsForDirection(burstInfo.data, equivalenciesToShow.length, 1);
+      var leftOverlapCount = countBurstOverlapsForDirection(burstInfo.data, equivalenciesToShow.length, -1);
+      var burstDirection = 1;
+
+      if (rightOverlapCount > 0 && leftOverlapCount === 0) {
+        burstDirection = -1;
+      } else if (leftOverlapCount > 0 && rightOverlapCount === 0) {
+        burstDirection = 1;
+      } else if (leftOverlapCount < rightOverlapCount) {
+        burstDirection = -1;
+      }
 
       var originalNode = courseNodes.selectAll("circle")
         .filter(d => d.course_number === burstInfo.course);
@@ -1103,7 +1144,7 @@ function initializeVisualization(data) {
         .duration(burstDuration)
         .attr("r", CONFIG.COURSE_NODE.HOVER_RADIUS)
         .attr("cx", function(d, i) {
-          return xcoord(burstInfo.data.x) + CONFIG.BURST.HORIZONTAL_OFFSET + i * CONFIG.BURST.SPACING;
+          return xcoord(burstInfo.data.x) + burstDirection * (CONFIG.BURST.HORIZONTAL_OFFSET + i * CONFIG.BURST.SPACING);
         })
         .attr("cy", function(d, i) {
           return ycoord(burstInfo.data.y);
@@ -1134,7 +1175,7 @@ function initializeVisualization(data) {
         .duration(burstDuration)
         .attr("opacity", 1)
         .attr("transform", function(d, i) {
-          const x = xcoord(burstInfo.data.x) + CONFIG.BURST.HORIZONTAL_OFFSET + i * CONFIG.BURST.SPACING;
+          const x = xcoord(burstInfo.data.x) + burstDirection * (CONFIG.BURST.HORIZONTAL_OFFSET + i * CONFIG.BURST.SPACING);
           const y = ycoord(burstInfo.data.y);
           return `translate(${x}, ${y})`;
         });
