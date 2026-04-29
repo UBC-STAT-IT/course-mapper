@@ -314,29 +314,39 @@ function initializeVisualization(data) {
     return firstChar;
   }
 
+  function getCourseColors() {
+    var cData = getCurrentDataSource();
+    if (cData && cData.courseColors) {
+      return cData.courseColors;
+    }
+    return CONFIG.COURSE_COLORS;
+  }
+
   function getCoursePrefixLabel(courseNumber) {
     var firstChar = courseNumber.toString().charAt(0).toUpperCase();
-    if (firstChar === 'S') return "STAT";
-    if (firstChar === 'M') return "MATH";
-    if (firstChar === 'D') return "DSCI";
-    if (firstChar === 'C') return "CPSC";
+    var colors = getCourseColors();
+    if (colors[firstChar] && colors[firstChar].label) {
+      return colors[firstChar].label;
+    }
     return firstChar;
   }
   
   function getCourseColor(courseNumber, isRequired, isInList) {
     if (isRequired || isInList) {
       var courseType = getCourseType(courseNumber);
-      return courseColors[courseType] ? courseColors[courseType].color : highlightColor1;
+      var colors = getCourseColors();
+      return colors[courseType] ? colors[courseType].color : highlightColor1;
     }
     return CONFIG.COURSE_NODE.DEFAULT_FILL;
   }
   
   function getCourseStrokeColor(courseNumber, isRequired, isInList) {
     var courseType = getCourseType(courseNumber);
+    var colors = getCourseColors();
     if (isRequired || isInList) {
-      return courseColors[courseType] ? courseColors[courseType].color : highlightColor1;
+      return colors[courseType] ? colors[courseType].color : highlightColor1;
     }
-    return courseColors[courseType] ? courseColors[courseType].color : CONFIG.COURSE_NODE.DEFAULT_STROKE;
+    return colors[courseType] ? colors[courseType].color : CONFIG.COURSE_NODE.DEFAULT_STROKE;
   }
   
   function getNumericPart(courseNumber) {
@@ -418,6 +428,7 @@ function initializeVisualization(data) {
       
       courseNodes.selectAll(".burst-circle").remove();
       courseNumbers.selectAll(".burst-text").remove();
+      requisiteLines.selectAll(".cpsc-ghost-line").remove();
       
       // Clear the currently selected course
       pinnedCourseNumber = null;
@@ -565,7 +576,8 @@ function initializeVisualization(data) {
   
   var LEGEND_CONFIG = getResponsiveLegendConfig(width, height);
   
-  const legendData = Object.keys(courseColors).map(key => courseColors[key]);
+  const currentColors = getCourseColors();
+  const legendData = Object.keys(currentColors).map(key => currentColors[key]);
   const legendItemsData = [
     {
       type: 'required',
@@ -909,6 +921,7 @@ function initializeVisualization(data) {
     // Remove any existing burst circles
     courseNodes.selectAll(".burst-circle").remove();
     courseNumbers.selectAll(".burst-text").remove();
+    requisiteLines.selectAll(".cpsc-ghost-line").remove();
     
     // Now show info for the new course
     var currentData = appState ? appState.data : data;
@@ -1135,12 +1148,18 @@ function initializeVisualization(data) {
         .attr("cy", ycoord(burstInfo.data.y))
         .attr("r", 0)
         .attr("fill", function(d) {
+          var customColor = getCustomCourseColor(d);
+          if (customColor) return originalFill !== CONFIG.COURSE_NODE.DEFAULT_FILL ? customColor : CONFIG.COURSE_NODE.DEFAULT_FILL;
           var courseType = getCourseType(d);
-          return originalFill !== CONFIG.COURSE_NODE.DEFAULT_FILL ? (courseColors[courseType] ? courseColors[courseType].color : CONFIG.BURST.FALLBACK_COLOR) : CONFIG.COURSE_NODE.DEFAULT_FILL;
+          var currentCourseColors = getCourseColors();
+          return originalFill !== CONFIG.COURSE_NODE.DEFAULT_FILL ? (currentCourseColors[courseType] ? currentCourseColors[courseType].color : CONFIG.BURST.FALLBACK_COLOR) : CONFIG.COURSE_NODE.DEFAULT_FILL;
         })
         .attr("stroke", function(d) {
+          var customColor = getCustomCourseColor(d);
+          if (customColor) return customColor;
           var courseType = getCourseType(d);
-          return courseColors[courseType] ? courseColors[courseType].color : CONFIG.BURST.FALLBACK_COLOR;
+          var currentCourseColors = getCourseColors();
+          return currentCourseColors[courseType] ? currentCourseColors[courseType].color : CONFIG.BURST.FALLBACK_COLOR;
         })
         .attr("stroke-width", CONFIG.COURSE_NODE.STROKE_WIDTH)
         .transition()
@@ -1163,8 +1182,10 @@ function initializeVisualization(data) {
         .attr("text-anchor", "middle")
         .attr("font-family", CONFIG.COURSE_TEXT.FONT_FAMILY)
         .attr("fill", function(d) {
+          var customColor = getCustomCourseColor(d);
           var courseType = getCourseType(d);
-          var burstFill = originalFill !== CONFIG.COURSE_NODE.DEFAULT_FILL ? (courseColors[courseType] ? courseColors[courseType].color : CONFIG.BURST.FALLBACK_COLOR) : CONFIG.COURSE_NODE.DEFAULT_FILL;
+          var currentCourseColors = getCourseColors();
+          var burstFill = originalFill !== CONFIG.COURSE_NODE.DEFAULT_FILL ? (customColor || (currentCourseColors[courseType] ? currentCourseColors[courseType].color : CONFIG.BURST.FALLBACK_COLOR)) : CONFIG.COURSE_NODE.DEFAULT_FILL;
           return burstFill !== CONFIG.COURSE_NODE.DEFAULT_FILL ? CONFIG.COURSE_NODE.DEFAULT_FILL : CONFIG.COURSE_NODE.DEFAULT_STROKE;
         })
         .attr("opacity", 0)
@@ -1183,6 +1204,83 @@ function initializeVisualization(data) {
           return `translate(${x}, ${y})`;
         });
     });
+
+    // Special logic for STAT 406 to show CPSC 340
+    if (course.course_number === "S406") {
+      var s406 = currentDataSource["courses_program" + currentDataSource.programs[0].program_id].find(c => c.course_number === "S406");
+      var s306 = currentDataSource["courses_program" + currentDataSource.programs[0].program_id].find(c => c.course_number === "S306");
+      var s344 = currentDataSource["courses_program" + currentDataSource.programs[0].program_id].find(c => c.course_number === "S344");
+      
+      if (s406 && s306 && s344) {
+        var dx = Math.abs(xcoord(s306.x) - xcoord(s344.x)) * 0.6;
+        var targetX = xcoord(s306.x) + dx;
+        var targetY = ycoord(s306.y);
+        
+        var startX = xcoord(s406.x);
+        var startY = ycoord(s406.y);
+        
+        var cpscGhost = courseNodes.selectAll(".cpsc-ghost").data(["C340"]);
+        
+        cpscGhost.enter()
+          .append("circle")
+          .attr("class", "burst-circle cpsc-ghost")
+          .attr("cx", startX)
+          .attr("cy", startY)
+          .attr("r", 0)
+          .attr("fill", CONFIG.COURSE_NODE.DEFAULT_FILL)
+          .attr("stroke", CONFIG.COURSE_COLORS["C"].color)
+          .attr("stroke-width", CONFIG.COURSE_NODE.STROKE_WIDTH)
+          .transition()
+          .duration(burstDuration)
+          .attr("r", CONFIG.COURSE_NODE.HOVER_RADIUS)
+          .attr("cx", targetX)
+          .attr("cy", targetY);
+
+        var cpscTextEnter = courseNumbers.selectAll(".cpsc-ghost-text").data(["C340"])
+          .enter()
+          .append("text")
+          .attr("class", "burst-text cpsc-ghost-text")
+          .attr("font-family", CONFIG.COURSE_TEXT.FONT_FAMILY)
+          .attr("text-anchor", "middle")
+          .style("opacity", 0)
+          .style("pointer-events", "none")
+          .attr("transform", `translate(${startX}, ${startY})`);
+          
+        cpscTextEnter.append("tspan")
+          .attr("class", "course-prefix")
+          .attr("x", 0)
+          .attr("dy", CONFIG.COURSE_TEXT.PREFIX_DY)
+          .attr("font-size", CONFIG.COURSE_TEXT.PREFIX_HOVER_SIZE)
+          .text("CPSC");
+
+        cpscTextEnter.append("tspan")
+          .attr("class", "course-number")
+          .attr("x", 0)
+          .attr("dy", CONFIG.COURSE_TEXT.NUMBER_DY)
+          .attr("font-size", CONFIG.COURSE_TEXT.NUMBER_HOVER_SIZE)
+          .text("340");
+          
+        cpscTextEnter.transition()
+          .duration(burstDuration)
+          .style("opacity", 1)
+          .attr("transform", `translate(${targetX}, ${targetY})`);
+          
+        requisiteLines.append("line")
+          .attr("class", "cpsc-ghost-line")
+          .attr("x1", startX)
+          .attr("y1", startY)
+          .attr("x2", startX)
+          .attr("y2", startY)
+          .attr("stroke", "black")
+          .attr("stroke-width", CONFIG.COURSE_NODE.STROKE_WIDTH)
+          .attr("opacity", 0)
+          .transition()
+          .duration(burstDuration)
+          .attr("x2", targetX)
+          .attr("y2", targetY)
+          .attr("opacity", CONFIG.LINES.HOVER_OPACITY);
+      }
+    }
   };
 
   function hideCourseInfo (event,course) {
@@ -1261,6 +1359,7 @@ function initializeVisualization(data) {
     if (shouldRemoveBurst) {
       courseNodes.selectAll(".burst-circle").remove();
       courseNumbers.selectAll(".burst-text").remove();
+      requisiteLines.selectAll(".cpsc-ghost-line").remove();
     }
     
     // Clear the currently selected course

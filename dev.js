@@ -48,6 +48,74 @@
     return devState.workingData ? devState.workingData.courses || [] : [];
   }
 
+  function renderSubjectColors() {
+    const container = document.getElementById('dev-subject-colors-container');
+    if (!container) return;
+    
+    const defaultColors = (appState && appState.config && appState.config.COURSE_COLORS) || {
+      'S': { color: "#00a896", label: "STAT" },
+      'M': { color: "#e84855", label: "MATH" },
+      'D': { color: "#FF7D00", label: "DSCI" },
+      'C': { color: "#6a4c93", label: "CPSC" }
+    };
+    
+    if (!devState.workingData.courseColors) {
+      devState.workingData.courseColors = deepClone(defaultColors);
+    }
+    
+    const colors = devState.workingData.courseColors;
+    container.innerHTML = '';
+    
+    Object.keys(colors).forEach(prefix => {
+      const entry = colors[prefix];
+      const row = document.createElement('div');
+      row.style.display = 'flex';
+      row.style.gap = '8px';
+      row.style.alignItems = 'center';
+      
+      const labelInput = document.createElement('input');
+      labelInput.value = entry.label;
+      labelInput.style.flex = '1';
+      labelInput.style.width = '0';
+      labelInput.placeholder = 'Subject (e.g. STAT)';
+      labelInput.onchange = (e) => {
+        colors[prefix].label = e.target.value;
+        setUnexportedChanges(true);
+        applyWorkingData(false, { refit: false });
+      };
+      
+      const colorInput = document.createElement('input');
+      colorInput.type = 'color';
+      colorInput.value = entry.color;
+      colorInput.style.width = '40px';
+      colorInput.style.height = '30px';
+      colorInput.style.padding = '0';
+      colorInput.style.cursor = 'pointer';
+      colorInput.onchange = (e) => {
+        colors[prefix].color = e.target.value;
+        setUnexportedChanges(true);
+        applyWorkingData(false, { refit: false });
+      };
+      
+      const delBtn = document.createElement('button');
+      delBtn.className = 'dev-ghost';
+      delBtn.textContent = '×';
+      delBtn.style.padding = '4px 8px';
+      delBtn.onclick = () => {
+        delete colors[prefix];
+        renderSubjectColors();
+        setUnexportedChanges(true);
+        applyWorkingData(false, { refit: false });
+      };
+      
+      row.appendChild(document.createTextNode(prefix + ':'));
+      row.appendChild(labelInput);
+      row.appendChild(colorInput);
+      row.appendChild(delBtn);
+      container.appendChild(row);
+    });
+  }
+
   function setUnexportedChanges(hasChanges) {
     devState.hasUnexportedChanges = !!hasChanges;
   }
@@ -423,6 +491,7 @@
   function updateCourseMetadata(payload, coords) {
     const courses = devState.workingData.courses || [];
     let existing = courses.find((c) => c.course_number === payload.number);
+    
     if (!existing) {
       existing = {
         course_number: payload.number,
@@ -869,6 +938,7 @@
   function resetWorkingData() {
     if (!devState.baseData) return;
     devState.workingData = deepClone(devState.baseData);
+    renderSubjectColors();
     devState.gridSize = devState.baseGridSize || computeGridStep(devState.workingData);
     setUnexportedChanges(false);
     applyWorkingData(true);
@@ -896,6 +966,7 @@
       try {
         const data = JSON.parse(e.target.result);
         devState.workingData = deepClone(data);
+        renderSubjectColors();
         devState.baseData = deepClone(data);
         devState.baseGridSize = computeGridStep(devState.baseData);
         devState.gridSize = devState.baseGridSize;
@@ -923,6 +994,7 @@
       }
 
       devState.workingData = deepClone(data);
+      renderSubjectColors();
       if (resetBase) {
         devState.baseData = deepClone(data);
         if (dept === 'stats') {
@@ -1012,6 +1084,22 @@
     });
     document.getElementById('dev-import')?.addEventListener('change', (e) => importJSONFile(e.target.files[0]));
     document.getElementById('dev-export')?.addEventListener('click', downloadJSON);
+    document.getElementById('dev-add-subject-color')?.addEventListener('click', () => {
+      const prefix = prompt('Enter a 1-character prefix for the new subject (e.g., A, B, X):');
+      if (prefix && prefix.length === 1 && /^[a-zA-Z]$/i.test(prefix)) {
+        const uPrefix = prefix.toUpperCase();
+        if (!devState.workingData.courseColors[uPrefix]) {
+          devState.workingData.courseColors[uPrefix] = { color: '#000000', label: 'NEW' };
+          renderSubjectColors();
+          setUnexportedChanges(true);
+          applyWorkingData(false, { refit: false });
+        } else {
+          toast('Prefix already exists');
+        }
+      } else if (prefix) {
+        toast('Invalid prefix (must be a single letter)');
+      }
+    });
     document.getElementById('dev-fit')?.addEventListener('click', () => appState?.fitMapToView(true));
     document.getElementById('dev-reset')?.addEventListener('click', resetWorkingData);
     document.getElementById('dev-place-course')?.addEventListener('click', placeCourseOnMap);

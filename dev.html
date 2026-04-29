@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <script>
+    // Dev Mode Guard: Only allow dev mode on localhost or 127.0.0.1
+    // If hosted on GitHub Pages or any remote server, redirect to the main app.
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && window.location.hostname !== '') {
+      window.location.href = 'index.html';
+    }
+  </script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
   <script src="https://d3js.org/d3.v6.min.js"></script>
@@ -109,6 +116,15 @@
         <button id="dev-fit" class="dev-ghost">Fit map</button>
         <button id="dev-reset" class="dev-ghost">Reset unsaved changes</button>
       </div>
+    </div>
+
+    <div class="dev-section">
+      <h3>Subject Colors</h3>
+      <div id="dev-subject-colors-container" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;"></div>
+      <div class="dev-actions" style="margin-top: 0;">
+        <button id="dev-add-subject-color" class="dev-ghost" style="padding: 4px 8px; font-size: 0.8rem;">+ Add Subject</button>
+      </div>
+      <span class="dev-help" style="display: block; margin-top: 10px; font-size: 0.8rem;">Note: Colors map to course prefixes (e.g. S for STAT, M for MATH).</span>
     </div>
 
     <div class="dev-section">
