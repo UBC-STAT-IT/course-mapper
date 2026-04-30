@@ -1148,15 +1148,11 @@ function initializeVisualization(data) {
         .attr("cy", ycoord(burstInfo.data.y))
         .attr("r", 0)
         .attr("fill", function(d) {
-          var customColor = getCustomCourseColor(d);
-          if (customColor) return originalFill !== CONFIG.COURSE_NODE.DEFAULT_FILL ? customColor : CONFIG.COURSE_NODE.DEFAULT_FILL;
           var courseType = getCourseType(d);
           var currentCourseColors = getCourseColors();
           return originalFill !== CONFIG.COURSE_NODE.DEFAULT_FILL ? (currentCourseColors[courseType] ? currentCourseColors[courseType].color : CONFIG.BURST.FALLBACK_COLOR) : CONFIG.COURSE_NODE.DEFAULT_FILL;
         })
         .attr("stroke", function(d) {
-          var customColor = getCustomCourseColor(d);
-          if (customColor) return customColor;
           var courseType = getCourseType(d);
           var currentCourseColors = getCourseColors();
           return currentCourseColors[courseType] ? currentCourseColors[courseType].color : CONFIG.BURST.FALLBACK_COLOR;
@@ -1182,10 +1178,9 @@ function initializeVisualization(data) {
         .attr("text-anchor", "middle")
         .attr("font-family", CONFIG.COURSE_TEXT.FONT_FAMILY)
         .attr("fill", function(d) {
-          var customColor = getCustomCourseColor(d);
           var courseType = getCourseType(d);
           var currentCourseColors = getCourseColors();
-          var burstFill = originalFill !== CONFIG.COURSE_NODE.DEFAULT_FILL ? (customColor || (currentCourseColors[courseType] ? currentCourseColors[courseType].color : CONFIG.BURST.FALLBACK_COLOR)) : CONFIG.COURSE_NODE.DEFAULT_FILL;
+          var burstFill = originalFill !== CONFIG.COURSE_NODE.DEFAULT_FILL ? (currentCourseColors[courseType] ? currentCourseColors[courseType].color : CONFIG.BURST.FALLBACK_COLOR) : CONFIG.COURSE_NODE.DEFAULT_FILL;
           return burstFill !== CONFIG.COURSE_NODE.DEFAULT_FILL ? CONFIG.COURSE_NODE.DEFAULT_FILL : CONFIG.COURSE_NODE.DEFAULT_STROKE;
         })
         .attr("opacity", 0)
