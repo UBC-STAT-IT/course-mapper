@@ -17,7 +17,7 @@ Go to the editor located at https://ubc-stat-it.github.io/course-mapper/dev.html
 
 On the editor page you'll see a copy of the current Course Mapper, with the editor you can make changes to nodes, delete nodes, create nodes, or move them to a desired position.
 
-To start editing, click the 'Dev Tools' icon on the bottom right:
+To start editing, click the 'Dev Tools' icon on the bottom right:  
 <img width="470" height="424" alt="image" src="https://github.com/user-attachments/assets/93fbd23c-eadb-4aff-8f3a-e1ef46d507d8" />
 
 A menu will popup with several options, here are them explained:
