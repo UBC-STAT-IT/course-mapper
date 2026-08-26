@@ -129,84 +129,87 @@
 
     <div class="dev-section">
       <h3>Course details</h3>
-      <div class="dev-grid">
-        <label>Course number</label>
-        <input id="dev-course-number" placeholder="e.g., S410" />
-
-        <label>Title</label>
-        <input id="dev-course-title" placeholder="Course title" />
-
-        <label>Credits</label>
-        <input id="dev-course-credits" placeholder="3" />
-
-        <label>Vector</label>
-        <input id="dev-course-vector" placeholder="[3-0-1]" />
-
-        <label>Description</label>
-        <textarea id="dev-course-description" rows="3" placeholder="Short description"></textarea>
-
-        <label>Notes</label>
-        <textarea id="dev-course-notes" rows="2" placeholder="Optional notes"></textarea>
-
-        <label>Equivalent courses</label>
-        <input id="dev-course-equivalencies" placeholder="Comma separated (e.g., M102,M104)" />
-      </div>
-
       <div class="dev-row">
-        <label>Programs</label>
-        <div class="dev-chip-row" id="dev-program-flags">
-          <label><input type="checkbox" value="1" checked> All Courses</label>
-          <label><input type="checkbox" value="2"> Major</label>
-          <label><input type="checkbox" value="3"> Honours</label>
-          <label><input type="checkbox" value="4"> Minor</label>
-        </div>
-      </div>
-
-      <div class="dev-row">
-        <label>Required (per program)</label>
-        <div class="dev-chip-row" id="dev-required-flags">
-          <label><input type="checkbox" value="1"> P1</label>
-          <label><input type="checkbox" value="2"> P2</label>
-          <label><input type="checkbox" value="3"> P3</label>
-          <label><input type="checkbox" value="4"> P4</label>
-        </div>
-      </div>
-
-      <div class="dev-row">
-        <label for="dev-prereqs">Prerequisites</label>
-        <select id="dev-prereqs" multiple></select>
-      </div>
-
-      <div class="dev-row">
-        <label for="dev-prereq-text">Prerequisite lines (one per line)</label>
-        <textarea id="dev-prereq-text" rows="3" placeholder="e.g.,
-One of STAT 416, STAT 405, or STAT 406
-MATH 200 and STAT 302"></textarea>
-      </div>
-
-      <div class="dev-row">
-        <label for="dev-coreqs">Corequisites</label>
-        <select id="dev-coreqs" multiple></select>
-      </div>
-
-      <div class="dev-row">
-        <label for="dev-coreq-text">Corequisite lines (one per line)</label>
-        <textarea id="dev-coreq-text" rows="3" placeholder="e.g.,
-One of STAT 306 or CPSC 340"></textarea>
-      </div>
-
-      <div class="dev-row">
-        <label for="dev-existing">Load existing course</label>
-        <select id="dev-existing">
-          <option value="">-- New course --</option>
+        <label for="dev-course-selector">Select course</label>
+        <select id="dev-course-selector">
+          <option value="" selected disabled>-- Select a course --</option>
+          <option value="__new__">+ New Course</option>
         </select>
       </div>
 
-      <div class="dev-actions">
-        <button id="dev-place-course" class="dev-secondary">Place on map</button>
-        <button id="dev-save-course" class="dev-primary">Save / Update course</button>
+      <div id="dev-course-form-fields" style="display: none;">
+        <div class="dev-grid">
+          <label>Course number</label>
+          <input id="dev-course-number" placeholder="e.g., S410" />
+
+          <label>Title</label>
+          <input id="dev-course-title" placeholder="Course title" />
+
+          <label>Credits</label>
+          <input id="dev-course-credits" placeholder="3" />
+
+          <label>Vector</label>
+          <input id="dev-course-vector" placeholder="[3-0-1]" />
+
+          <label>Description</label>
+          <textarea id="dev-course-description" rows="3" placeholder="Short description"></textarea>
+
+          <label>Notes</label>
+          <textarea id="dev-course-notes" rows="2" placeholder="Optional notes"></textarea>
+
+          <label>Equivalent courses</label>
+          <input id="dev-course-equivalencies" placeholder="Comma separated (e.g., M102,M104)" />
+        </div>
+
+        <div class="dev-row">
+          <label>Programs</label>
+          <div class="dev-chip-row" id="dev-program-flags">
+            <label><input type="checkbox" value="1" checked> All Courses</label>
+            <label><input type="checkbox" value="2"> Major</label>
+            <label><input type="checkbox" value="3"> Honours</label>
+            <label><input type="checkbox" value="4"> Minor</label>
+          </div>
+        </div>
+
+        <div class="dev-row">
+          <label>Required (per program)</label>
+          <div class="dev-chip-row" id="dev-required-flags">
+            <label><input type="checkbox" value="1"> P1</label>
+            <label><input type="checkbox" value="2"> P2</label>
+            <label><input type="checkbox" value="3"> P3</label>
+            <label><input type="checkbox" value="4"> P4</label>
+          </div>
+        </div>
+
+        <div class="dev-row">
+          <label for="dev-prereqs">Prerequisites</label>
+          <select id="dev-prereqs" multiple></select>
+        </div>
+
+        <div class="dev-row">
+          <label for="dev-prereq-text">Prerequisite lines (one per line)</label>
+          <textarea id="dev-prereq-text" rows="3" placeholder="e.g.,
+One of STAT 416, STAT 405, or STAT 406
+MATH 200 and STAT 302"></textarea>
+        </div>
+
+        <div class="dev-row">
+          <label for="dev-coreqs">Corequisites</label>
+          <select id="dev-coreqs" multiple></select>
+        </div>
+
+        <div class="dev-row">
+          <label for="dev-coreq-text">Corequisite lines (one per line)</label>
+          <textarea id="dev-coreq-text" rows="3" placeholder="e.g.,
+One of STAT 306 or CPSC 340"></textarea>
+        </div>
+
+        <div class="dev-actions">
+          <button id="dev-place-course" class="dev-secondary">Place on map</button>
+          <button id="dev-save-course" class="dev-primary">Save / Update course</button>
+        </div>
+        <p class="dev-help">Tip: place the course, drag to adjust position, then save. Use drag mode to move any course.</p>
       </div>
-      <p class="dev-help">Tip: place the course, drag to adjust position, then save. Use drag mode to move any course.</p>
     </div>
   </div>
 

@@ -60,9 +60,9 @@
       "course_number": "S305",
       "credits": "3",
       "title": "Introduction to Statistical Inference",
-      "description": "Review of probability theory. Sampling distribution theory, large sample theory and methods of estimation and hypothesis testing, including maximum likelihood estimation, likelihood ratio testing and confidence interval construction. ",
+      "description": "Review of probability theory. Sampling distribution theory, large sample theory and methods of estimation and hypothesis testing, including maximum likelihood estimation, likelihood ratio testing and confidence interval construction.",
       "vector": "[3-0-1]",
-      "notes": ""
+      "notes": "The Department recommends that students meet the pre-requisites through option (a) or (b)."
     },
     {
       "course_number": "S306",
@@ -116,7 +116,7 @@
       "course_number": "S443",
       "credits": "3",
       "title": "Time Series and Forecasting",
-      "description": "Trend and seasonality, autocorrelation, stationarity, stochastic models, exponential smoothing, Holt-Winters methods, Box-Jenkins approach, frequency domain analysis. ",
+      "description": "Trend and seasonality, autocorrelation, stationarity, stochastic models, exponential smoothing, Holt-Winters methods, Box-Jenkins approach, frequency domain analysis.",
       "vector": "[3-0-1]",
       "notes": ""
     },
@@ -276,13 +276,6 @@
       "Unnamed: 4": ""
     },
     {
-      "requisite_id": 9,
-      "course_number": "S305",
-      "type": "pre",
-      "description": "Either (a) one of STAT 200, STAT 203, BIOL 300, STAT 251, COMM 291, ECON 325, FRST 231, PSYC 218, PSYC 366 and one of MATH 302, STAT 302; or (b) DSCI 200 and STAT 201 and one of MATH 302, STAT 302; or (c) a score of 65% or higher in one of MATH 302, STAT 302",
-      "Unnamed: 4": ""
-    },
-    {
       "requisite_id": 10,
       "course_number": "S306",
       "type": "pre",
@@ -364,27 +357,6 @@
       "course_number": "S406",
       "type": "pre",
       "description": "a) One of STAT 306, CPSC 340, or b) STAT 301 and one of MATH 152, MATH 221, MATH 223 and one of STAT 302, MATH 302",
-      "Unnamed: 4": ""
-    },
-    {
-      "requisite_id": 24,
-      "course_number": "S443",
-      "type": "pre",
-      "description": "One of MATH 302, MATH 318, STAT 302",
-      "Unnamed: 4": ""
-    },
-    {
-      "requisite_id": 25,
-      "course_number": "S443",
-      "type": "pre",
-      "description": "One of STAT 200,  STAT 251, STAT 300, BIOL 300, COMM 291, ECON 325, ECON 327, FRST 231, POLI 380, PSYC 218, PSYC 278, PSYC 366",
-      "Unnamed: 4": ""
-    },
-    {
-      "requisite_id": 26,
-      "course_number": "S443",
-      "type": "co",
-      "description": "STAT 305",
       "Unnamed: 4": ""
     },
     {
@@ -521,18 +493,38 @@
       "Unnamed: 4": "›"
     },
     {
-      "requisite_id": "S302-pre-M200-1775620767466",
+      "requisite_id": "S302-pretext-1786555219482-0",
       "course_number": "S302",
       "type": "pre",
-      "description": "Prerequisite: M200",
+      "description": "One of MATH 200, MATH 226, MATH 217, MATH 253, MATH 254",
       "Unnamed: 4": ""
     },
     {
-      "requisite_id": "S302-pretext-1775620767466-0",
-      "course_number": "S302",
+      "requisite_id": "S305-pretext-1786555231865-0",
+      "course_number": "S305",
       "type": "pre",
-      "is_text": true,
-      "description": "Prerequisite: One of MATH 200, MATH 226, MATH 217, MATH 253, MATH 254",
+      "description": "Either (a) one of STAT 200, STAT 203, BIOL 300, STAT 251, COMM 291, ECON 325, FRST 231, PSYC 218, PSYC 366 and one of MATH 302, STAT 302; or (b) DSCI 200 and STAT 201 and one of MATH 302, STAT 302; or (c) a score of 65% or higher in one of MATH 302, STAT 302",
+      "Unnamed: 4": ""
+    },
+    {
+      "requisite_id": "S443-pretext-1787761368337-0",
+      "course_number": "S443",
+      "type": "pre",
+      "description": "One of MATH 302, MATH 318, STAT 302",
+      "Unnamed: 4": ""
+    },
+    {
+      "requisite_id": "S443-pretext-1787761368337-1",
+      "course_number": "S443",
+      "type": "pre",
+      "description": "One of ECON 326, ECON 328, STAT 300, STAT 301, STAT 306",
+      "Unnamed: 4": ""
+    },
+    {
+      "requisite_id": "S443-cotext-1787761368337-0",
+      "course_number": "S443",
+      "type": "co",
+      "description": "STAT 305",
       "Unnamed: 4": ""
     }
   ],
@@ -590,48 +582,6 @@
       "requisite_id": 7,
       "course_number": "S301",
       "requisite_number": "M100",
-      "is_primary": 1,
-      "is_co": 0
-    },
-    {
-      "requisite_id": 9,
-      "course_number": "S305",
-      "requisite_number": "S200",
-      "is_primary": 1,
-      "is_co": 0
-    },
-    {
-      "requisite_id": 9,
-      "course_number": "S305",
-      "requisite_number": "S203",
-      "is_primary": 0,
-      "is_co": 0
-    },
-    {
-      "requisite_id": 9,
-      "course_number": "S305",
-      "requisite_number": "S251",
-      "is_primary": 0,
-      "is_co": 0
-    },
-    {
-      "requisite_id": 9,
-      "course_number": "S305",
-      "requisite_number": "S302",
-      "is_primary": 1,
-      "is_co": 0
-    },
-    {
-      "requisite_id": 9,
-      "course_number": "S305",
-      "requisite_number": "S201",
-      "is_primary": 1,
-      "is_co": 0
-    },
-    {
-      "requisite_id": 9,
-      "course_number": "S305",
-      "requisite_number": "D200",
       "is_primary": 1,
       "is_co": 0
     },
@@ -774,41 +724,6 @@
       "requisite_number": "S302",
       "is_primary": 1,
       "is_co": 0
-    },
-    {
-      "requisite_id": 24,
-      "course_number": "S443",
-      "requisite_number": "S302",
-      "is_primary": 1,
-      "is_co": 0
-    },
-    {
-      "requisite_id": 25,
-      "course_number": "S443",
-      "requisite_number": "S200",
-      "is_primary": 1,
-      "is_co": 0
-    },
-    {
-      "requisite_id": 25,
-      "course_number": "S443",
-      "requisite_number": "S251",
-      "is_primary": 0,
-      "is_co": 0
-    },
-    {
-      "requisite_id": 25,
-      "course_number": "S443",
-      "requisite_number": "S300",
-      "is_primary": 0,
-      "is_co": 0
-    },
-    {
-      "requisite_id": 26,
-      "course_number": "S443",
-      "requisite_number": "S305",
-      "is_primary": 1,
-      "is_co": 1
     },
     {
       "requisite_id": 27,
@@ -1051,12 +966,12 @@
       "equivalency_number": "M254"
     },
     {
-      "equivalency_id": "S302-eq-0-1775620767465",
+      "equivalency_id": "S302-eq-0-1786555219482",
       "course_number": "S302",
       "equivalency_number": "M302"
     },
     {
-      "equivalency_id": "S302-eq-1-1775620767465",
+      "equivalency_id": "S302-eq-1-1786555219482",
       "course_number": "S302",
       "equivalency_number": "M318"
     }
@@ -1861,78 +1776,6 @@
       "course_requisite_number": "S301M100"
     },
     {
-      "requisite_id": 9,
-      "course_number": "S305",
-      "requisite_number": "S200",
-      "course_x": -2,
-      "course_y": 12,
-      "requisite_x": 0,
-      "requisite_y": 3,
-      "requisite_is_primary": 1,
-      "requisite_is_co": 0,
-      "course_requisite_number": "S305S200"
-    },
-    {
-      "requisite_id": 9,
-      "course_number": "S305",
-      "requisite_number": "S203",
-      "course_x": -2,
-      "course_y": 12,
-      "requisite_x": 0,
-      "requisite_y": 0,
-      "requisite_is_primary": 0,
-      "requisite_is_co": 0,
-      "course_requisite_number": "S305S203"
-    },
-    {
-      "requisite_id": 9,
-      "course_number": "S305",
-      "requisite_number": "S251",
-      "course_x": -2,
-      "course_y": 12,
-      "requisite_x": 2.5,
-      "requisite_y": 6,
-      "requisite_is_primary": 0,
-      "requisite_is_co": 0,
-      "course_requisite_number": "S305S251"
-    },
-    {
-      "requisite_id": 9,
-      "course_number": "S305",
-      "requisite_number": "S302",
-      "course_x": -2,
-      "course_y": 12,
-      "requisite_x": -1,
-      "requisite_y": 9,
-      "requisite_is_primary": 1,
-      "requisite_is_co": 0,
-      "course_requisite_number": "S305S302"
-    },
-    {
-      "requisite_id": 9,
-      "course_number": "S305",
-      "requisite_number": "S201",
-      "course_x": -2,
-      "course_y": 12,
-      "requisite_x": 1.5,
-      "requisite_y": 3,
-      "requisite_is_primary": 1,
-      "requisite_is_co": 0,
-      "course_requisite_number": "S305S201"
-    },
-    {
-      "requisite_id": 9,
-      "course_number": "S305",
-      "requisite_number": "D200",
-      "course_x": -2,
-      "course_y": 12,
-      "requisite_x": 3,
-      "requisite_y": 3,
-      "requisite_is_primary": 1,
-      "requisite_is_co": 0,
-      "course_requisite_number": "S305D200"
-    },
-    {
       "requisite_id": 10,
       "course_number": "S306",
       "requisite_number": "M221",
@@ -2173,66 +2016,6 @@
       "course_requisite_number": "S406S302"
     },
     {
-      "requisite_id": 24,
-      "course_number": "S443",
-      "requisite_number": "S302",
-      "course_x": -2,
-      "course_y": 18,
-      "requisite_x": -1,
-      "requisite_y": 9,
-      "requisite_is_primary": 1,
-      "requisite_is_co": 0,
-      "course_requisite_number": "S443S302"
-    },
-    {
-      "requisite_id": 25,
-      "course_number": "S443",
-      "requisite_number": "S200",
-      "course_x": -2,
-      "course_y": 18,
-      "requisite_x": 0,
-      "requisite_y": 3,
-      "requisite_is_primary": 1,
-      "requisite_is_co": 0,
-      "course_requisite_number": "S443S200"
-    },
-    {
-      "requisite_id": 25,
-      "course_number": "S443",
-      "requisite_number": "S251",
-      "course_x": -2,
-      "course_y": 18,
-      "requisite_x": 2.5,
-      "requisite_y": 6,
-      "requisite_is_primary": 0,
-      "requisite_is_co": 0,
-      "course_requisite_number": "S443S251"
-    },
-    {
-      "requisite_id": 25,
-      "course_number": "S443",
-      "requisite_number": "S300",
-      "course_x": -2,
-      "course_y": 18,
-      "requisite_x": 1,
-      "requisite_y": 9,
-      "requisite_is_primary": 0,
-      "requisite_is_co": 0,
-      "course_requisite_number": "S443S300"
-    },
-    {
-      "requisite_id": 26,
-      "course_number": "S443",
-      "requisite_number": "S305",
-      "course_x": -2,
-      "course_y": 18,
-      "requisite_x": -2,
-      "requisite_y": 12,
-      "requisite_is_primary": 1,
-      "requisite_is_co": 1,
-      "course_requisite_number": "S443S305"
-    },
-    {
       "requisite_id": 27,
       "course_number": "S445",
       "requisite_number": "S306",
@@ -2389,16 +2172,154 @@
       "course_requisite_number": "S416S306"
     },
     {
-      "requisite_id": "S302-pre-M200-1775620767466",
-      "course_number": "S302",
-      "requisite_number": "M200",
-      "course_x": -1,
-      "course_y": 9,
-      "requisite_x": -2.5,
+      "requisite_id": "S305-pre-D200-1786555231865",
+      "course_number": "S305",
+      "requisite_number": "D200",
+      "course_x": -2,
+      "course_y": 12,
+      "requisite_x": 3,
+      "requisite_y": 3,
+      "requisite_is_primary": 1,
+      "requisite_is_co": 0,
+      "course_requisite_number": "S305D200"
+    },
+    {
+      "requisite_id": "S305-pre-S200-1786555231865",
+      "course_number": "S305",
+      "requisite_number": "S200",
+      "course_x": -2,
+      "course_y": 12,
+      "requisite_x": 0,
+      "requisite_y": 3,
+      "requisite_is_primary": 1,
+      "requisite_is_co": 0,
+      "course_requisite_number": "S305S200"
+    },
+    {
+      "requisite_id": "S305-pre-S201-1786555231865",
+      "course_number": "S305",
+      "requisite_number": "S201",
+      "course_x": -2,
+      "course_y": 12,
+      "requisite_x": 1.5,
+      "requisite_y": 3,
+      "requisite_is_primary": 1,
+      "requisite_is_co": 0,
+      "course_requisite_number": "S305S201"
+    },
+    {
+      "requisite_id": "S305-pre-S203-1786555231865",
+      "course_number": "S305",
+      "requisite_number": "S203",
+      "course_x": -2,
+      "course_y": 12,
+      "requisite_x": 0,
+      "requisite_y": 0,
+      "requisite_is_primary": 1,
+      "requisite_is_co": 0,
+      "course_requisite_number": "S305S203"
+    },
+    {
+      "requisite_id": "S305-pre-S251-1786555231865",
+      "course_number": "S305",
+      "requisite_number": "S251",
+      "course_x": -2,
+      "course_y": 12,
+      "requisite_x": 2.5,
       "requisite_y": 6,
       "requisite_is_primary": 1,
       "requisite_is_co": 0,
-      "course_requisite_number": "S302M200"
+      "course_requisite_number": "S305S251"
+    },
+    {
+      "requisite_id": "S305-pre-S302-1786555231865",
+      "course_number": "S305",
+      "requisite_number": "S302",
+      "course_x": -2,
+      "course_y": 12,
+      "requisite_x": -1,
+      "requisite_y": 9,
+      "requisite_is_primary": 1,
+      "requisite_is_co": 0,
+      "course_requisite_number": "S305S302"
+    },
+    {
+      "requisite_id": "S443-pre-S300-1787761368337",
+      "course_number": "S443",
+      "requisite_number": "S300",
+      "course_x": -2,
+      "course_y": 18,
+      "requisite_x": 1,
+      "requisite_y": 9,
+      "requisite_is_primary": 1,
+      "requisite_is_co": 0,
+      "course_requisite_number": "S443S300"
+    },
+    {
+      "requisite_id": "S443-pre-S301-1787761368337",
+      "course_number": "S443",
+      "requisite_number": "S301",
+      "course_x": -2,
+      "course_y": 18,
+      "requisite_x": 0,
+      "requisite_y": 6,
+      "requisite_is_primary": 1,
+      "requisite_is_co": 0,
+      "course_requisite_number": "S443S301"
+    },
+    {
+      "requisite_id": "S443-pre-S302-1787761368337",
+      "course_number": "S443",
+      "requisite_number": "S302",
+      "course_x": -2,
+      "course_y": 18,
+      "requisite_x": -1,
+      "requisite_y": 9,
+      "requisite_is_primary": 1,
+      "requisite_is_co": 0,
+      "course_requisite_number": "S443S302"
+    },
+    {
+      "requisite_id": "S443-pre-S306-1787761368337",
+      "course_number": "S443",
+      "requisite_number": "S306",
+      "course_x": -2,
+      "course_y": 18,
+      "requisite_x": 2,
+      "requisite_y": 12,
+      "requisite_is_primary": 1,
+      "requisite_is_co": 0,
+      "course_requisite_number": "S443S306"
+    },
+    {
+      "requisite_id": "S443-co-S305-1787761368337",
+      "course_number": "S443",
+      "requisite_number": "S305",
+      "course_x": -2,
+      "course_y": 18,
+      "requisite_x": -2,
+      "requisite_y": 12,
+      "requisite_is_primary": 1,
+      "requisite_is_co": 1,
+      "course_requisite_number": "S443S305"
     }
-  ]
+  ],
+  "courseColors": {
+    "S": {
+      "color": "#00a896",
+      "label": "STAT"
+    },
+    "M": {
+      "color": "#e84855",
+      "label": "MATH"
+    },
+    "D": {
+      "color": "#FF7D00",
+      "label": "DSCI"
+    },
+    "C": {
+      "color": "#6a4c93",
+      "label": "CPSC"
+    }
+  }
 }

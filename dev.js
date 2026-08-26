@@ -208,7 +208,7 @@
     const courses = getCourseOptions().slice().sort(compareCourseNumbers);
     const prereqSelect = document.getElementById('dev-prereqs');
     const coreqSelect = document.getElementById('dev-coreqs');
-    const existingSelect = document.getElementById('dev-existing');
+    const courseSelector = document.getElementById('dev-course-selector');
 
     const preserveMultiSelect = (select) => {
       if (!select) return { selected: [], scrollTop: 0 };
@@ -246,17 +246,90 @@
     ensureOptionVisible(prereqSelect, focusCourseNumber);
     ensureOptionVisible(coreqSelect, focusCourseNumber);
 
-    if (existingSelect) {
-      existingSelect.innerHTML = '<option value="">-- New course --</option>';
+    if (courseSelector) {
+      courseSelector.innerHTML = '';
+
+      const placeholderOpt = document.createElement('option');
+      placeholderOpt.value = '';
+      placeholderOpt.textContent = '-- Select a course --';
+      placeholderOpt.disabled = true;
+      courseSelector.appendChild(placeholderOpt);
+
+      const newOpt = document.createElement('option');
+      newOpt.value = '__new__';
+      newOpt.textContent = '+ New Course';
+      courseSelector.appendChild(newOpt);
+
       courses.forEach((c) => {
         const opt = document.createElement('option');
         opt.value = c.course_number;
         opt.textContent = c.course_number;
-        existingSelect.appendChild(opt);
+        courseSelector.appendChild(opt);
       });
+
       if (focusCourseNumber) {
-        existingSelect.value = focusCourseNumber;
+        courseSelector.value = focusCourseNumber;
+        setFormFromCourse(focusCourseNumber);
+        setCourseFormMode('existing');
+      } else {
+        placeholderOpt.selected = true;
+        setCourseFormMode('none');
       }
+    }
+  }
+
+  // Blank out the course form for a fresh "New Course" entry.
+  function clearCourseForm() {
+    document.getElementById('dev-course-number').value = '';
+    document.getElementById('dev-course-title').value = '';
+    document.getElementById('dev-course-credits').value = '';
+    document.getElementById('dev-course-vector').value = '';
+    document.getElementById('dev-course-description').value = '';
+    document.getElementById('dev-course-notes').value = '';
+    document.getElementById('dev-course-equivalencies').value = '';
+
+    const prereqTextEl = document.getElementById('dev-prereq-text');
+    const coreqTextEl = document.getElementById('dev-coreq-text');
+    if (prereqTextEl) prereqTextEl.value = '';
+    if (coreqTextEl) coreqTextEl.value = '';
+
+    document.querySelectorAll('#dev-program-flags input[type="checkbox"]').forEach((cb, idx) => {
+      cb.checked = idx === 0;
+    });
+    document.querySelectorAll('#dev-required-flags input[type="checkbox"]').forEach((cb) => {
+      cb.checked = false;
+    });
+
+    const prereqSelect = document.getElementById('dev-prereqs');
+    const coreqSelect = document.getElementById('dev-coreqs');
+    if (prereqSelect) Array.from(prereqSelect.options).forEach((opt) => { opt.selected = false; });
+    if (coreqSelect) Array.from(coreqSelect.options).forEach((opt) => { opt.selected = false; });
+  }
+
+  // Toggle the course form's visibility and which action button applies:
+  // 'none' hides the form, 'new' shows it for creating a course, 'existing' for editing one.
+  function setCourseFormMode(mode) {
+    const formFields = document.getElementById('dev-course-form-fields');
+    const placeBtn = document.getElementById('dev-place-course');
+    const saveBtn = document.getElementById('dev-save-course');
+    const numberInput = document.getElementById('dev-course-number');
+    if (!formFields) return;
+
+    if (mode === 'none') {
+      formFields.style.display = 'none';
+      clearCourseForm();
+      return;
+    }
+
+    formFields.style.display = '';
+    if (mode === 'new') {
+      if (placeBtn) placeBtn.style.display = '';
+      if (saveBtn) saveBtn.style.display = 'none';
+      if (numberInput) numberInput.removeAttribute('readonly');
+    } else if (mode === 'existing') {
+      if (placeBtn) placeBtn.style.display = 'none';
+      if (saveBtn) saveBtn.style.display = '';
+      if (numberInput) numberInput.setAttribute('readonly', 'readonly');
     }
   }
 
@@ -346,10 +419,13 @@
       if (rf) rf.checked = isReq;
     });
 
-    // Prereqs/Coreqs selections
+    // Prereqs/Coreqs selections.
+    // "requisites" holds the human-readable bullet text (hand-authored for the original
+    // courses, or typed into the freeform lines below for dev-tool-created ones) — all of
+    // it belongs in the textareas, regardless of how it was originally entered.
     const existingReqs = devState.workingData?.requisites?.filter((r) => r.course_number === course.course_number) || [];
-    const preTextLines = existingReqs.filter((r) => r.type === 'pre' && r.is_text);
-    const coTextLines = existingReqs.filter((r) => r.type === 'co' && r.is_text);
+    const preTextLines = existingReqs.filter((r) => r.type === 'pre');
+    const coTextLines = existingReqs.filter((r) => r.type === 'co');
     if (prereqTextEl) {
       prereqTextEl.value = preTextLines.map((r) => r.description.replace(/^Prerequisite:\s*/i, '')).join('\n');
     }
@@ -358,16 +434,20 @@
     }
     const prereqSelect = document.getElementById('dev-prereqs');
     const coreqSelect = document.getElementById('dev-coreqs');
+    // Match against requisites_programs (raw course codes) rather than parsing the
+    // human-readable description text, which no longer round-trips to a course code.
+    const requisiteLinks = (devState.workingData?.requisites_programs || [])
+      .filter((r) => r.course_number === course.course_number);
     if (prereqSelect) {
-      const prereqs = existingReqs.filter((r) => r.type === 'pre').map((r) => r.description.replace('Prerequisite: ', '').trim());
+      const prereqCodes = requisiteLinks.filter((r) => !r.requisite_is_co).map((r) => r.requisite_number);
       Array.from(prereqSelect.options).forEach((opt) => {
-        opt.selected = prereqs.includes(opt.value);
+        opt.selected = prereqCodes.includes(opt.value);
       });
     }
     if (coreqSelect) {
-      const coreqs = existingReqs.filter((r) => r.type === 'co').map((r) => r.description.replace('Corequisite: ', '').trim());
+      const coreqCodes = requisiteLinks.filter((r) => r.requisite_is_co).map((r) => r.requisite_number);
       Array.from(coreqSelect.options).forEach((opt) => {
-        opt.selected = coreqs.includes(opt.value);
+        opt.selected = coreqCodes.includes(opt.value);
       });
     }
   }
@@ -616,16 +696,12 @@
     devState.workingData.requisites = devState.workingData.requisites || [];
     devState.workingData.requisites_programs = devState.workingData.requisites_programs || [];
 
+    // Selecting a prerequisite/corequisite here only draws the map line between the two
+    // nodes (requisites_programs). It does NOT add anything to the human-readable panel —
+    // that text comes solely from the "Prerequisite/Corequisite lines" freeform textareas below.
     const addEntry = (req, type) => {
       const reqCoords = getCoordsForCourse(req);
       const id = `${courseNumber}-${type}-${req}-${Date.now()}`;
-      devState.workingData.requisites.push({
-        requisite_id: id,
-        course_number: courseNumber,
-        type: type,
-        description: `${type === 'co' ? 'Corequisite' : 'Prerequisite'}: ${req}`,
-        "Unnamed: 4": ''
-      });
       devState.workingData.requisites_programs.push({
         requisite_id: id,
         course_number: courseNumber,
@@ -643,14 +719,15 @@
     prereqs.forEach((p) => addEntry(p, 'pre'));
     coreqs.forEach((c) => addEntry(c, 'co'));
 
-    // Freeform bullet lines (no map lines drawn)
+    // Freeform bullet lines — these are the human-readable text shown in the course info panel,
+    // under an already-present "Prerequisites"/"Corequisites" heading, so store the raw line
+    // as typed rather than re-labeling it (matches how the hand-authored course data reads).
     prereqTextLines.forEach((line, idx) => {
       devState.workingData.requisites.push({
         requisite_id: `${courseNumber}-pretext-${Date.now()}-${idx}`,
         course_number: courseNumber,
         type: 'pre',
-        is_text: true,
-        description: `Prerequisite: ${line}`,
+        description: line,
         "Unnamed: 4": ''
       });
     });
@@ -660,8 +737,7 @@
         requisite_id: `${courseNumber}-cotext-${Date.now()}-${idx}`,
         course_number: courseNumber,
         type: 'co',
-        is_text: true,
-        description: `Corequisite: ${line}`,
+        description: line,
         "Unnamed: 4": ''
       });
     });
@@ -1120,9 +1196,15 @@
     prereqSelect?.addEventListener('change', autoSaveRequisites);
     coreqSelect?.addEventListener('change', autoSaveRequisites);
 
-    document.getElementById('dev-existing')?.addEventListener('change', (e) => {
-      if (!e.target.value) return;
-      setFormFromCourse(e.target.value);
+    document.getElementById('dev-course-selector')?.addEventListener('change', (e) => {
+      const val = e.target.value;
+      if (val === '__new__') {
+        clearCourseForm();
+        setCourseFormMode('new');
+      } else if (val) {
+        setFormFromCourse(val);
+        setCourseFormMode('existing');
+      }
     });
 
     // Drag toggle

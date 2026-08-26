@@ -169,6 +169,12 @@ body.dev-mode {
   resize: vertical;
 }
 
+.dev-grid input[readonly] {
+  background: #f3f4f6;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
 .dev-chip-row {
   display: flex;
   gap: 10px;
