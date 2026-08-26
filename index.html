@@ -94,6 +94,14 @@
       loadDepartmentData('dsci', false);
     });
 
+    // Choose DSCI through URL param
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('active') === 'dsci' && currentDepartment !== 'dsci') {
+      document.getElementById('dept-dsci').classList.add('active');
+      document.getElementById('dept-stats').classList.remove('active');
+      loadDepartmentData('dsci', false);
+    }
+
     // ============================================
     // RESPONSIVE & MOBILE FUNCTIONALITY
     // ============================================
